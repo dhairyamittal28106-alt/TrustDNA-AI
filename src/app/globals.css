@@ -1,0 +1,67 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+  --radius-sm: calc(var(--radius) * .6);
+  --radius-md: calc(var(--radius) * .8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+:root {
+  --background: #07091b;
+  --foreground: #f7f8ff;
+  --card: rgb(18 22 52 / 72%);
+  --card-foreground: #f7f8ff;
+  --popover: #141837;
+  --popover-foreground: #f7f8ff;
+  --primary: #8b7cff;
+  --primary-foreground: #fff;
+  --secondary: #202650;
+  --secondary-foreground: #f7f8ff;
+  --muted: #191e42;
+  --muted-foreground: #9ca5c8;
+  --accent: #252b5b;
+  --accent-foreground: #f7f8ff;
+  --destructive: #ff7085;
+  --border: rgb(163 174 255 / 14%);
+  --input: rgb(163 174 255 / 14%);
+  --ring: #8b7cff;
+  --radius: 1rem;
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  html { @apply font-sans; }
+  body { @apply bg-background text-foreground; }
+}
+
+.app-backdrop {
+  background: radial-gradient(circle at 11% 0%, rgb(72 55 184 / 38%), transparent 25rem), radial-gradient(circle at 91% 6%, rgb(15 134 209 / 20%), transparent 27rem), #07091b;
+}
+
+.glass { background: linear-gradient(145deg, rgb(28 33 75 / 74%), rgb(12 15 40 / 63%)); box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), 0 20px 60px rgb(0 0 0 / 18%); }
+.grid-overlay { background-image: linear-gradient(rgb(145 155 255 / 4%) 1px, transparent 1px), linear-gradient(90deg, rgb(145 155 255 / 4%) 1px, transparent 1px); background-size: 36px 36px; }
