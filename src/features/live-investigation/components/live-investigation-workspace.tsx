@@ -176,7 +176,7 @@ export function LiveInvestigationWorkspace() {
   if (result && scenario && resultView !== "summary") {
     if (resultView === "certificate") return <TrustCertificate result={result} onStartNewInvestigation={reset} onViewCaseFile={() => setResultView("case")} onViewEvidenceReport={() => setResultView("report")} />;
     if (resultView === "report") return <EvidenceReport result={result} onReturnToCaseFile={() => setResultView("case")} onStartNewInvestigation={reset} onViewCertificate={() => setResultView("certificate")} />;
-    return <><CaseFile result={result} scenario={scenario} onBackToJudgeMode={() => { window.location.href = "/demo"; }} onRunNewInvestigation={reset} /><section className="mx-auto max-w-7xl px-5 pb-12 md:px-8"><div className="flex flex-wrap justify-end gap-2"><Button variant="outline" onClick={() => setResultView("certificate")}>View Certificate</Button><Button variant="outline" onClick={() => setResultView("report")}>View Evidence Report</Button></div></section></>;
+    return <><CaseFile result={result} scenario={scenario} onBackToJudgeMode={() => { window.location.href = "/investigate"; }} onRunNewInvestigation={reset} backLabel="Back to investigation workspace" /><section className="mx-auto max-w-7xl px-5 pb-12 md:px-8"><div className="flex flex-wrap justify-end gap-2"><Button variant="outline" onClick={() => setResultView("certificate")}>View Certificate</Button><Button variant="outline" onClick={() => setResultView("report")}>View Evidence Report</Button></div></section></>;
   }
 
   return <section className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-10">

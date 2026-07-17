@@ -21,6 +21,7 @@ type CaseFileProps = {
   result: InvestigationResult;
   scenario: Scenario;
   onBackToJudgeMode: () => void;
+  backLabel?: string;
   onRunNewInvestigation: () => void;
 };
 
@@ -90,7 +91,7 @@ function downloadEvidenceReport(result: InvestigationResult, scenario: Scenario)
   URL.revokeObjectURL(downloadUrl);
 }
 
-export function CaseFile({ result, scenario, onBackToJudgeMode, onRunNewInvestigation }: CaseFileProps) {
+export function CaseFile({ result, scenario, onBackToJudgeMode, onRunNewInvestigation, backLabel = "Back to Judge Mode" }: CaseFileProps) {
   const isImpersonation = result.investigation.verdict === "impersonation_confirmed";
   const riskScore = Math.round(result.risk.breakdown.weighted_score * 100);
   const identityMatch = Math.max(0, 100 - riskScore);
@@ -238,7 +239,7 @@ export function CaseFile({ result, scenario, onBackToJudgeMode, onRunNewInvestig
       <Card className="glass mt-5 border-white/10">
         <CardContent className="flex flex-wrap items-center justify-between gap-5 p-5 md:p-6">
           <div><p className="text-sm font-medium text-white">Case actions</p><p className="mt-1 text-xs text-slate-500">Certificate, evidence export, and a fresh investigation use this same verified case context.</p></div>
-          <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" onClick={() => document.getElementById("certificate")?.scrollIntoView({ behavior: "smooth", block: "start" })}><ShieldCheck aria-hidden="true" />View Certificate</Button><Button type="button" variant="outline" onClick={() => downloadEvidenceReport(result, scenario)}><Download aria-hidden="true" />Download Evidence Report</Button><Button type="button" variant="outline" onClick={onBackToJudgeMode}><ArrowRight aria-hidden="true" />Back to Judge Mode</Button><Button type="button" onClick={onRunNewInvestigation} className="bg-[#8b78f6] text-white hover:bg-[#9d8cff]"><RefreshCcw aria-hidden="true" />Run New Investigation</Button></div>
+          <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" onClick={() => document.getElementById("certificate")?.scrollIntoView({ behavior: "smooth", block: "start" })}><ShieldCheck aria-hidden="true" />View Certificate</Button><Button type="button" variant="outline" onClick={() => downloadEvidenceReport(result, scenario)}><Download aria-hidden="true" />Download Evidence Report</Button><Button type="button" variant="outline" onClick={onBackToJudgeMode}><ArrowRight aria-hidden="true" />{backLabel}</Button><Button type="button" onClick={onRunNewInvestigation} className="bg-[#8b78f6] text-white hover:bg-[#9d8cff]"><RefreshCcw aria-hidden="true" />Run New Investigation</Button></div>
         </CardContent>
       </Card>
     </section>

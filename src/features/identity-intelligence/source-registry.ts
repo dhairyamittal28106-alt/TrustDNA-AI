@@ -5,7 +5,7 @@ export const primarySources: SourceDefinition[] = [
   { id: "writing-sample", label: "Writing samples", description: "Analyze consented plain-text writing for explainable communication signals.", kind: "primary", availability: "text_ready", acceptsText: true },
   { id: "portfolio", label: "Portfolio", description: "Add a plain-text portfolio excerpt or Markdown export.", kind: "primary", availability: "text_ready", acceptsText: true },
   { id: "personal-notes", label: "Personal notes", description: "Add a consented plain-text note or Markdown export.", kind: "primary", availability: "text_ready", acceptsText: true },
-  { id: "voice-sample", label: "Voice samples", description: "Voice analysis is reserved for the upcoming media extractor.", kind: "primary", availability: "coming_soon" },
+  { id: "voice-sample", label: "Voice samples", description: "Record or upload voice evidence in the Investigation Workspace. Speech-to-text requires a verified transcript in the current platform.", kind: "primary", availability: "integration_ready" },
   { id: "certificate", label: "Certificates", description: "Certificate parsing and provenance extraction are coming soon.", kind: "primary", availability: "coming_soon" },
   { id: "document", label: "Documents", description: "Paste extracted document text or import TXT/Markdown now.", kind: "primary", availability: "text_ready", acceptsText: true },
 ];

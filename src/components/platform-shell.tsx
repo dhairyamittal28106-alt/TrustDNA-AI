@@ -11,7 +11,7 @@ const navigation = [
   { href: "/genome", label: "Identity Genome", icon: Fingerprint },
   { href: "/gmail", label: "Gmail Source", icon: Mail },
   { href: "/twin", label: "Identity Twin", icon: BrainCircuit },
-  { href: "/live-investigation", label: "Live Investigation", icon: Radar },
+  { href: "/investigate", label: "New Investigation", icon: Radar },
   { href: "/investigations", label: "Investigations", icon: ShieldAlert },
   { href: "/cases", label: "Case Files", icon: FileText },
   { href: "/certificates", label: "Certificates", icon: BadgeCheck },
