@@ -8,31 +8,25 @@ type FactMatch = {
   evidence: string;
 };
 
+type FactDefinition = Pick<FactMatch, "factKey" | "title" | "category">;
+
+const languages = new Set([
+  "c", "c++", "c#", "dart", "go", "java", "javascript", "kotlin", "php", "python", "r", "ruby", "rust", "swift", "typescript",
+]);
+const frameworks = new Set([
+  "angular", "django", "fastapi", "flask", "laravel", "next.js", "nextjs", "node.js", "nodejs", "react", "react native", "spring", "tailwind", "vue", "vue.js",
+]);
+
 /**
- * Extracts only literal, pattern-backed statements. This intentionally does
- * not use an LLM or attempt to fill in facts that the evidence never states.
+ * Extracts only explicit, sentence-level statements from consented text.
+ * It never promotes vocabulary frequency or an ambiguous phrase into an
+ * Identity Fact, and it never uses a generative model.
  */
 export class IdentityKnowledgeExtractor {
   extract(input: KnowledgeExtractionInput): IdentityKnowledgeObject[] {
-    const matches = [
-      ...this.extractSingle(input.content, /\b(?:my name is|i am|i'm)\s+([A-Z][A-Za-z]*(?:\s+[A-Z][A-Za-z]*){0,3})\b/g, "name", "Name", "identity"),
-      ...this.extractSingle(input.content, /\bmy date of birth is\s+([^.!?\n]{4,80})/gi, "date_of_birth", "Date of birth", "identity"),
-      ...this.extractSingle(input.content, /\b(?:my gender is|i identify as)\s+([^.!?\n]{2,60})/gi, "gender", "Gender", "identity"),
-      ...this.extractSingle(input.content, /\b(?:i live in|i am based in)\s+([A-Z][^.!?\n]{1,80})/g, "location", "Location", "identity"),
-      ...this.extractSingle(input.content, /\b(?:i study at|i attend|my university is)\s+([A-Z][^.!?\n]{1,100})/g, "university", "University", "education"),
-      ...this.extractSingle(input.content, /\b(?:i am pursuing|i studied|my degree is)\s+([^.!?\n]{3,100})/gi, "degree", "Degree", "education"),
-      ...this.extractSingle(input.content, /\b(?:i work as|my current role is|i am currently a)\s+([^.!?\n]{3,100})/gi, "current_role", "Current role", "career"),
-      ...this.extractSingle(input.content, /\b(?:my dream is to|my dream is)\s+([^.!?\n]{3,120})/gi, "dream", "Dream", "goals"),
-      ...this.extractSingle(input.content, /\b(?:my goal is to|my goals are|i want to)\s+([^.!?\n]{3,120})/gi, "goal", "Goal", "goals"),
-      ...this.extractSingle(input.content, /\bmy favorite (?:cricketer|player) (?:was|is now|is)\s+([A-Z][A-Za-z]*(?:\s+[A-Z][A-Za-z]*){0,3})\b/g, "favorite_player", "Favorite player", "sports"),
-      ...this.extractSingle(input.content, /\bmy favorite team is\s+([A-Z][^.!?\n]{1,80})/g, "favorite_team", "Favorite team", "sports"),
-      ...this.extractList(input.content, /\b(?:my skills include|i have experience with|i work with|i know)\s+([^.!?\n]{3,220})/gi, "skill", "Skill", "skills"),
-      ...this.extractList(input.content, /\b(?:technologies? (?:i use|i have worked with)|i built .{0,80}? using)\s+([^.!?\n]{3,220})/gi, "technology", "Technology", "technologies"),
-      ...this.extractSingle(input.content, /\b(?:i built a project called|my project is called|i created a project named)\s+([A-Z][^.!?\n]{1,120})/g, "project", "Project", "projects"),
-      ...this.extractSingle(input.content, /\b(?:i won|i completed|i started)\s+([^.!?\n]{3,140})/gi, "timeline_event", "Timeline event", "timeline"),
-    ];
-
+    const matches = splitSentences(input.content).flatMap((sentence) => this.extractSentence(sentence));
     const unique = new Map<string, FactMatch>();
+
     for (const match of matches) {
       const value = normalizeValue(match.value);
       if (!value) continue;
@@ -58,17 +52,91 @@ export class IdentityKnowledgeExtractor {
     }));
   }
 
-  private extractSingle(content: string, pattern: RegExp, factKey: string, title: string, category: IdentityKnowledgeCategory): FactMatch[] {
-    return [...content.matchAll(pattern)].map((match) => ({ factKey, title, category, value: match[1] ?? "", evidence: match[0] }));
-  }
+  private extractSentence(sentence: string): FactMatch[] {
+    const facts: FactMatch[] = [];
+    const add = (definition: FactDefinition, value: string) => facts.push({ ...definition, value, evidence: sentence });
 
-  private extractList(content: string, pattern: RegExp, factKey: string, title: string, category: IdentityKnowledgeCategory): FactMatch[] {
-    return [...content.matchAll(pattern)].flatMap((match) => splitList(match[1] ?? "").map((value) => ({ factKey, title, category, value, evidence: match[0] })));
+    const name = matchValue(sentence, /^(?:my name is|i am|i'm)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})$/i);
+    if (name && looksLikeName(name)) add({ factKey: "name", title: "Name", category: "identity" }, name);
+
+    const dateOfBirth = matchValue(sentence, /^(?:i was born on|my (?:date of birth|birthday) is)\s+(.+)$/i);
+    if (dateOfBirth) add({ factKey: "date_of_birth", title: "Date of birth", category: "identity" }, dateOfBirth);
+
+    const university = matchValue(sentence, /^(?:i study at|i am studying at|my university is|i attend)\s+(.+)$/i);
+    if (university) add({ factKey: "university", title: "University", category: "education" }, university);
+
+    const degreeWithUniversity = matchValue(sentence, /^i study\s+(.+?)\s+at\s+.+$/i);
+    const degree = university ? undefined : degreeWithUniversity ?? matchValue(sentence, /^(?:i am pursuing|my degree is|i study)\s+(.+)$/i);
+    if (degree) add({ factKey: "degree", title: "Degree", category: "education" }, degree);
+
+    const school = matchValue(sentence, /^(?:i studied at|my school is)\s+(.+)$/i);
+    if (school) add({ factKey: "school", title: "School", category: "education" }, school);
+
+    const dream = matchValue(sentence, /^my dream is\s+(.+)$/i);
+    if (dream) add({ factKey: "dream", title: "Dream", category: "goals" }, dream);
+
+    const explicitGoal = matchValue(sentence, /^(?:my goal is|my goals are)\s+(.+)$/i);
+    if (explicitGoal) add({ factKey: "goal", title: "Goal", category: "goals" }, explicitGoal);
+
+    const wantsTo = matchValue(sentence, /^i want to\s+(.+)$/i);
+    if (wantsTo) add({ factKey: "goal", title: "Goal", category: "goals" }, `to ${wantsTo}`);
+
+    const career = matchValue(sentence, /^i want to (?:become|work as)\s+(.+)$/i);
+    if (career) add({ factKey: "career", title: "Career", category: "career" }, career);
+
+    const project = matchValue(sentence, /^i (?:built|created|developed|made)\s+(.+)$/i);
+    if (project) add({ factKey: "project", title: "Project", category: "projects" }, project);
+
+    const favoriteSport = matchValue(sentence, /^my favou?rite sport(?: is)?\s+(.+)$/i);
+    if (favoriteSport) add({ factKey: "sport", title: "Favorite sport", category: "sports" }, favoriteSport);
+
+    const playedSport = matchValue(sentence, /^i play\s+(.+)$/i);
+    if (playedSport) add({ factKey: "sport", title: "Sport", category: "sports" }, playedSport);
+
+    const favoritePlayer = matchValue(sentence, /^my favou?rite (?:player|cricketer)(?: is)?\s+(.+)$/i);
+    if (favoritePlayer) add({ factKey: "favorite_player", title: "Favorite cricketer", category: "sports" }, favoritePlayer);
+
+    const interest = matchValue(sentence, /^i (?:enjoy|like|am interested in)\s+(.+)$/i);
+    if (interest) add({ factKey: "interest", title: "Interest", category: "interests" }, interest);
+
+    const technicalStatement = matchValue(sentence, /^i (?:know|use|code in|work with)\s+(.+)$/i);
+    if (technicalStatement) facts.push(...extractTechnicalFacts(technicalStatement, sentence));
+
+    return facts;
   }
 }
 
+function splitSentences(content: string): string[] {
+  return content
+    .replace(/\r\n?/g, "\n")
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((sentence) => sentence.replace(/^[-*•]\s*/, "").replace(/[.!?]+$/, "").trim())
+    .filter(Boolean);
+}
+
+function matchValue(sentence: string, pattern: RegExp): string | undefined {
+  const match = sentence.match(pattern);
+  return match?.[1] ? normalizeValue(match[1]) : undefined;
+}
+
+function extractTechnicalFacts(value: string, evidence: string): FactMatch[] {
+  return splitList(value).flatMap((item) => {
+    const normalized = item.toLocaleLowerCase();
+    if (languages.has(normalized)) return [{ factKey: "programming_language", title: "Programming language", value: item, category: "skills" as const, evidence }];
+    if (frameworks.has(normalized)) return [{ factKey: "framework", title: "Framework", value: item, category: "skills" as const, evidence }];
+    return [];
+  });
+}
+
 function splitList(value: string): string[] {
-  return value.split(/,|\band\b|\//i).map(normalizeValue).filter((item) => item.length >= 2 && item.length <= 80);
+  return value
+    .split(/,|\band\b|\//i)
+    .map(normalizeValue)
+    .filter((item) => item.length >= 1 && item.length <= 80);
+}
+
+function looksLikeName(value: string): boolean {
+  return !/\b(?:a|an|the|studying|pursuing|working|student|developer)\b/i.test(value);
 }
 
 function normalizeValue(value: string): string {

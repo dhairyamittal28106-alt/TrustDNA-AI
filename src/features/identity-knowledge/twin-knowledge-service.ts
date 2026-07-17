@@ -43,7 +43,13 @@ function toEvidence(fact: IdentityKnowledgeObject): TwinEvidence {
 
 function renderAnswer(question: string, facts: IdentityKnowledgeObject[]): string {
   const name = facts.find((fact) => fact.factKey === "name");
+  const dream = facts.find((fact) => fact.factKey === "dream");
+  const university = facts.find((fact) => fact.factKey === "university");
+  const favoritePlayer = facts.find((fact) => fact.factKey === "favorite_player");
   const summary = facts.map((fact) => `${fact.title}: ${fact.value}.`).join("\n");
-  if (/\bwho am i\b/i.test(question) && name) return `You are ${name.value}.\n\nAccording to your Identity Genome:\n${facts.filter((fact) => fact.id !== name.id).map((fact) => `${fact.title}: ${fact.value}.`).join("\n") || "No additional directly stated identity facts are active yet."}`;
+  if (/\bwho am i\b/i.test(question) && name) return `You are ${name.value}.`;
+  if (/\b(dream|ambition)\b/i.test(question) && dream) return `Your dream is ${dream.value}.`;
+  if (/\b(where do i (?:study|attend)|university|college)\b/i.test(question) && university) return university.value.endsWith(".") ? university.value : `${university.value}.`;
+  if (/\b(favorite|favourite|cricketer|player)\b/i.test(question) && favoritePlayer) return `Your favorite cricketer is ${favoritePlayer.value}.`;
   return `According to your Identity Genome:\n${summary}`;
 }

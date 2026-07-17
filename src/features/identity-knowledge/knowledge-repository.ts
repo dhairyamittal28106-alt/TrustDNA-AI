@@ -1,5 +1,9 @@
 import type { IdentityKnowledgeObject } from "@/features/identity-knowledge/types";
 
+const knownTechnicalValues = new Set([
+  "angular", "c", "c++", "c#", "dart", "django", "fastapi", "flask", "go", "java", "javascript", "kotlin", "laravel", "next.js", "nextjs", "node.js", "nodejs", "php", "python", "r", "react", "react native", "ruby", "rust", "spring", "swift", "tailwind", "typescript", "vue", "vue.js",
+]);
+
 function storageKey(userId: string): string {
   return `trustdna:identity-knowledge:${userId}`;
 }
@@ -11,7 +15,7 @@ export const knowledgeRepository = {
     try {
       const raw = window.sessionStorage.getItem(storageKey(userId));
       const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed as IdentityKnowledgeObject[] : [];
+      return Array.isArray(parsed) ? supersedeAmbiguousLegacyFacts(parsed as IdentityKnowledgeObject[]) : [];
     } catch {
       return [];
     }
@@ -27,3 +31,14 @@ export const knowledgeRepository = {
     window.sessionStorage.removeItem(storageKey(userId));
   },
 };
+
+/**
+ * Keeps historic evidence visible but prevents a pre-12.6 ambiguous phrase
+ * such as "the right ps" from remaining an active technical skill.
+ */
+function supersedeAmbiguousLegacyFacts(objects: IdentityKnowledgeObject[]): IdentityKnowledgeObject[] {
+  return objects.map((fact) => {
+    if (fact.status !== "active" || !["skill", "technology"].includes(fact.factKey)) return fact;
+    return knownTechnicalValues.has(fact.value.trim().toLocaleLowerCase()) ? fact : { ...fact, status: "superseded" as const };
+  });
+}
