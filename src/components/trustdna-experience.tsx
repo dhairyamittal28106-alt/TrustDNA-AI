@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, Cpu, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CaseFile } from "@/components/case-file";
-import { EvidenceReport } from "@/components/evidence-report";
+import { EvidenceReport, EvidenceReportSkeleton } from "@/components/evidence-report";
 import { InvestigationConsole } from "@/components/investigation-console";
 import { JudgeMode } from "@/components/judge-mode";
 import { LandingPage } from "@/components/landing-page";
@@ -68,12 +68,13 @@ export function TrustDNAExperience() {
             <motion.div id="live-investigation" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
               {running && <InvestigationConsole activeStep={activeStep} />}
               {running && activeStep >= 7 && <TrustCertificateSkeleton />}
+              {running && activeStep >= 7 && <EvidenceReportSkeleton />}
               {error && <div className="mx-auto max-w-4xl px-5 pb-8 md:px-10"><div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-red-300/20 bg-red-400/[.08] p-5 text-red-100"><div className="flex items-center gap-3"><AlertCircle className="size-5" /><p className="text-sm">{error}</p></div><Button onClick={startInvestigation} variant="outline" className="border-red-200/25 bg-transparent text-red-100 hover:bg-red-100/10 hover:text-white">Retry investigation</Button></div></div>}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {result && <motion.div id="case-file" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}><CaseFile result={result} scenario={selected} onBackToJudgeMode={goToJudgeMode} onRunNewInvestigation={startInvestigation} /><TrustCertificate result={result} onStartNewInvestigation={startInvestigation} onViewCaseFile={() => document.getElementById("case-file")?.scrollIntoView({ behavior: "smooth", block: "start" })} onViewEvidenceReport={() => document.getElementById("evidence-report")?.scrollIntoView({ behavior: "smooth", block: "start" })} /><EvidenceReport result={result} /></motion.div>}
+        {result && <motion.div id="case-file" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}><CaseFile result={result} scenario={selected} onBackToJudgeMode={goToJudgeMode} onRunNewInvestigation={startInvestigation} /><TrustCertificate result={result} onStartNewInvestigation={startInvestigation} onViewCaseFile={() => document.getElementById("case-file")?.scrollIntoView({ behavior: "smooth", block: "start" })} onViewEvidenceReport={() => document.getElementById("evidence-report")?.scrollIntoView({ behavior: "smooth", block: "start" })} /><EvidenceReport result={result} onReturnToCaseFile={() => document.getElementById("case-file")?.scrollIntoView({ behavior: "smooth", block: "start" })} onStartNewInvestigation={startInvestigation} onViewCertificate={() => document.getElementById("certificate")?.scrollIntoView({ behavior: "smooth", block: "start" })} /></motion.div>}
 
         <section className="mx-auto max-w-7xl px-5 pb-20 pt-12 md:px-10">
           <div className="grid gap-5 border-t border-white/[.08] pt-12 md:grid-cols-[.8fr_1.2fr]">
