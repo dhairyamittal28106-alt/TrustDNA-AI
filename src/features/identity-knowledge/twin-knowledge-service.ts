@@ -21,7 +21,7 @@ export class TwinKnowledgeService {
       reasoning: {
         answer,
         confidence,
-        reasoningSummary: ["Searched active structured Identity Knowledge Objects before writing features.", "Every statement is quoted or normalized from direct consented evidence.", "Superseded facts remain in the Genome history and were not used as the current answer."],
+        reasoningSummary: ["Selected only the directly relevant structured Identity Knowledge Objects before writing features.", "Every statement is quoted or normalized from direct consented evidence.", "When requested, historical revisions are shown separately from the current active fact."],
         limitations: ["Facts are limited to what was explicitly stated in the analyzed evidence.", "TrustDNA does not infer missing biography, preferences, relationships, or abilities."],
         suggestedSources: [],
       },
@@ -46,10 +46,14 @@ function renderAnswer(question: string, facts: IdentityKnowledgeObject[]): strin
   const dream = facts.find((fact) => fact.factKey === "dream");
   const university = facts.find((fact) => fact.factKey === "university");
   const favoritePlayer = facts.find((fact) => fact.factKey === "favorite_player");
+  const favoritePlayerHistory = facts.filter((fact) => fact.factKey === "favorite_player" && fact.status === "superseded");
   const summary = facts.map((fact) => `${fact.title}: ${fact.value}.`).join("\n");
   if (/\bwho am i\b/i.test(question) && name) return `You are ${name.value}.`;
   if (/\b(dream|ambition)\b/i.test(question) && dream) return `Your dream is ${dream.value}.`;
   if (/\b(where do i (?:study|attend)|university|college)\b/i.test(question) && university) return university.value.endsWith(".") ? university.value : `${university.value}.`;
-  if (/\b(favorite|favourite|cricketer|player)\b/i.test(question) && favoritePlayer) return `Your favorite cricketer is ${favoritePlayer.value}.`;
+  if (/\b(favorite|favourite|cricketer|player)\b/i.test(question) && favoritePlayer) {
+    const history = favoritePlayerHistory.length ? ` Previously recorded: ${favoritePlayerHistory.map((fact) => fact.value).join(", ")}.` : "";
+    return `Your favorite cricketer is ${favoritePlayer.value}.${history}`;
+  }
   return `According to your Identity Genome:\n${summary}`;
 }

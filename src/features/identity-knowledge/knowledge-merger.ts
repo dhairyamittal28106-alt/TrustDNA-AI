@@ -8,6 +8,15 @@ export class KnowledgeMerger {
     const updated: Array<{ previous: IdentityKnowledgeObject; current: IdentityKnowledgeObject }> = [];
 
     for (const next of incoming) {
+      if (next.status === "superseded") {
+        const alreadyRecorded = objects.some((item) => item.factKey === next.factKey && item.status === "superseded" && sameValue(item.value, next.value));
+        if (!alreadyRecorded) {
+          objects = [...objects, next];
+          added.push(next);
+        }
+        continue;
+      }
+
       const active = objects.find((item) => item.factKey === next.factKey && item.status === "active");
       if (active && sameValue(active.value, next.value)) continue;
 

@@ -1,4 +1,4 @@
-import type { IdentityKnowledgeCategory, IdentityKnowledgeObject, KnowledgeExtractionInput } from "@/features/identity-knowledge/types";
+import type { IdentityKnowledgeCategory, IdentityKnowledgeObject, KnowledgeExtractionInput, KnowledgeFactStatus } from "@/features/identity-knowledge/types";
 
 type FactMatch = {
   factKey: string;
@@ -6,6 +6,7 @@ type FactMatch = {
   value: string;
   category: IdentityKnowledgeCategory;
   evidence: string;
+  status?: KnowledgeFactStatus;
 };
 
 type FactDefinition = Pick<FactMatch, "factKey" | "title" | "category">;
@@ -41,7 +42,7 @@ export class IdentityKnowledgeExtractor {
       value: match.value,
       category: match.category,
       description: "Directly stated in consented evidence.",
-      status: "active",
+      status: match.status ?? "active",
       provenance: {
         source: input.sourceLabel,
         evidence: compactEvidence(match.evidence),
@@ -54,7 +55,8 @@ export class IdentityKnowledgeExtractor {
 
   private extractSentence(sentence: string): FactMatch[] {
     const facts: FactMatch[] = [];
-    const add = (definition: FactDefinition, value: string) => facts.push({ ...definition, value, evidence: sentence });
+    const statementStatus = temporalStatus(sentence);
+    const add = (definition: FactDefinition, value: string, status = statementStatus) => facts.push({ ...definition, value, evidence: sentence, status });
 
     const name = matchValue(sentence, /^(?:my name is|i am|i'm)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})$/i);
     if (name && looksLikeName(name)) add({ factKey: "name", title: "Name", category: "identity" }, name);
@@ -62,12 +64,21 @@ export class IdentityKnowledgeExtractor {
     const dateOfBirth = matchValue(sentence, /^(?:i was born on|my (?:date of birth|birthday) is)\s+(.+)$/i);
     if (dateOfBirth) add({ factKey: "date_of_birth", title: "Date of birth", category: "identity" }, dateOfBirth);
 
-    const university = matchValue(sentence, /^(?:i study at|i am studying at|my university is|i attend)\s+(.+)$/i);
+    const directUniversity = matchValue(sentence, /^(?:i study at|i am studying at|currently studying at|current university is|my university is|i attend)\s+(.+)$/i);
+    const academicAt = sentence.match(/^(?:i study|i am studying|i am pursuing)\s+(.+?)\s+at\s+(.+)$/i);
+    const university = directUniversity ?? (academicAt?.[2] ? normalizeValue(academicAt[2]) : undefined);
     if (university) add({ factKey: "university", title: "University", category: "education" }, university);
 
-    const degreeWithUniversity = matchValue(sentence, /^i study\s+(.+?)\s+at\s+.+$/i);
-    const degree = university ? undefined : degreeWithUniversity ?? matchValue(sentence, /^(?:i am pursuing|my degree is|i study)\s+(.+)$/i);
-    if (degree) add({ factKey: "degree", title: "Degree", category: "education" }, degree);
+    const academicProgram = academicAt?.[1] ? normalizeValue(academicAt[1]) : undefined;
+    const degree = academicProgram ?? (directUniversity ? undefined : matchValue(sentence, /^(?:i am pursuing|my degree is|i study)\s+(.+)$/i));
+    if (degree && !/^my degree$/i.test(degree)) {
+      const program = parseAcademicProgram(degree);
+      add({ factKey: "degree", title: "Degree", category: "education" }, program.degree);
+      if (program.department) add({ factKey: "department", title: "Department", category: "education" }, program.department);
+    }
+
+    const explicitDepartment = matchValue(sentence, /^(?:my department is|i study in the department of)\s+(.+)$/i);
+    if (explicitDepartment) add({ factKey: "department", title: "Department", category: "education" }, explicitDepartment);
 
     const school = matchValue(sentence, /^(?:i studied at|my school is)\s+(.+)$/i);
     if (school) add({ factKey: "school", title: "School", category: "education" }, school);
@@ -93,8 +104,13 @@ export class IdentityKnowledgeExtractor {
     const playedSport = matchValue(sentence, /^i play\s+(.+)$/i);
     if (playedSport) add({ factKey: "sport", title: "Sport", category: "sports" }, playedSport);
 
-    const favoritePlayer = matchValue(sentence, /^my favou?rite (?:player|cricketer)(?: is)?\s+(.+)$/i);
-    if (favoritePlayer) add({ factKey: "favorite_player", title: "Favorite cricketer", category: "sports" }, favoritePlayer);
+    const favoritePlayerMatch = sentence.match(/^(?:(now|currently|current|latest|previously|earlier|before|formerly|used to)\s+)?my favou?rite (?:player|cricketer)\s+(was|is)\s+(.+)$/i);
+    if (favoritePlayerMatch?.[3]) {
+      const verb = favoritePlayerMatch[2].toLocaleLowerCase();
+      const marker = favoritePlayerMatch[1]?.toLocaleLowerCase();
+      const historical = verb === "was" || ["previously", "earlier", "before", "formerly", "used to"].includes(marker ?? "");
+      add({ factKey: "favorite_player", title: "Favorite cricketer", category: "sports" }, favoritePlayerMatch[3], historical ? "superseded" : "active");
+    }
 
     const interest = matchValue(sentence, /^i (?:enjoy|like|am interested in)\s+(.+)$/i);
     if (interest) add({ factKey: "interest", title: "Interest", category: "interests" }, interest);
@@ -126,6 +142,17 @@ function extractTechnicalFacts(value: string, evidence: string): FactMatch[] {
     if (frameworks.has(normalized)) return [{ factKey: "framework", title: "Framework", value: item, category: "skills" as const, evidence }];
     return [];
   });
+}
+
+function parseAcademicProgram(value: string): { degree: string; department?: string } {
+  const normalized = normalizeValue(value).replace(/^(?:a|an|the)\s+/i, "");
+  const [degree, ...departmentParts] = normalized.split(/\s+in\s+/i);
+  const department = departmentParts.join(" in ").trim();
+  return { degree: degree.trim(), department: department || undefined };
+}
+
+function temporalStatus(sentence: string): KnowledgeFactStatus {
+  return /^(?:previously|earlier|before|formerly|used to)\b/i.test(sentence.trim()) ? "superseded" : "active";
 }
 
 function splitList(value: string): string[] {

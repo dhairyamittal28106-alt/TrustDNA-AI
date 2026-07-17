@@ -19,9 +19,18 @@ const queryTerms: Array<{ pattern: RegExp; keys: string[] }> = [
 export class KnowledgeRetriever {
   retrieve(question: string, objects: IdentityKnowledgeObject[]): IdentityKnowledgeObject[] {
     const active = objects.filter((item) => item.status === "active");
-    if (/\b(who am i|about me|summarize|summary|identity)\b/i.test(question)) return active.slice(0, 6);
+    if (/\bwho am i\b/i.test(question)) return active.filter((item) => item.factKey === "name");
     const matched = queryTerms.find((entry) => entry.pattern.test(question));
-    if (matched) return active.filter((item) => matched.keys.includes(item.factKey));
-    return [];
+    if (!matched) return [];
+
+    const current = active.filter((item) => matched.keys.includes(item.factKey));
+    if (matched.keys.includes("favorite_player")) {
+      const history = objects
+        .filter((item) => item.factKey === "favorite_player" && item.status === "superseded")
+        .sort((left, right) => right.provenance.timestamp.localeCompare(left.provenance.timestamp));
+      return [...current, ...history];
+    }
+    if (/\b(?:about me|summarize|summary|identity)\b/i.test(question)) return active.filter((item) => item.factKey === "name");
+    return current;
   }
 }
