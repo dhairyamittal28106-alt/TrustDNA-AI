@@ -1,5 +1,5 @@
-import { TrustDNAExperience } from "@/components/trustdna-experience";
+import { PlatformLanding } from "@/components/platform-landing";
 
 export default function Home() {
-  return <TrustDNAExperience />;
+  return <PlatformLanding />;
 }

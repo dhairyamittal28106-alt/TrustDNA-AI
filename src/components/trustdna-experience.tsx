@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { CaseFile } from "@/components/case-file";
 import { EvidenceReport, EvidenceReportSkeleton } from "@/components/evidence-report";
 import { InvestigationConsole } from "@/components/investigation-console";
 import { IdentityGenomeHologram } from "@/components/identity-genome-hologram";
+import { BrandMark } from "@/components/brand-mark";
 import { JudgeMode } from "@/components/judge-mode";
 import { LandingPage } from "@/components/landing-page";
 import { TrustCertificate, TrustCertificateSkeleton } from "@/components/trust-certificate";
@@ -37,7 +39,7 @@ function getHologramState(running: boolean, activeStep: number, result: Investig
   return { phase: "sentinel", currentState: "Sentinel coordinating final decision" };
 }
 
-export function TrustDNAExperience() {
+export function TrustDNAExperience({ showLanding = true }: { showLanding?: boolean }) {
   const [selected, setSelected] = useState<Scenario>(judgeScenarios[0]);
   const [running, setRunning] = useState(false);
   const [activeStep, setActiveStep] = useState(-1);
@@ -90,7 +92,8 @@ export function TrustDNAExperience() {
       <div className="grid-overlay pointer-events-none fixed inset-0 opacity-50" />
       <div className="relative xl:pr-64 2xl:pr-80">
         <div className="pointer-events-none fixed right-4 top-24 z-30 hidden w-60 xl:block 2xl:right-5 2xl:w-72"><IdentityGenomeHologram {...hologramProps} compact /></div>
-        <LandingPage onStart={goToJudgeMode} heroCompanion={<IdentityGenomeHologram {...hologramProps} />} />
+        {showLanding && <LandingPage onStart={goToJudgeMode} heroCompanion={<IdentityGenomeHologram {...hologramProps} />} />}
+        {!showLanding && <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 md:px-10"><Link href="/" aria-label="TrustDNA home"><BrandMark /></Link><div className="flex items-center gap-4"><Link href="/dashboard" className="text-sm text-slate-400 hover:text-white">Platform</Link><span className="rounded-full border border-[#a99bff]/20 bg-[#8f7bfa]/10 px-2.5 py-1 font-mono text-[9px] tracking-[.12em] text-[#c1b7ff]">JUDGE DEMO</span></div></header>}
         <JudgeMode selected={selected} onSelect={setSelected} onStart={startInvestigation} disabled={running} />
 
         <AnimatePresence>
