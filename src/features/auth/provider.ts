@@ -13,6 +13,7 @@ import {
   type User,
 } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { requestTrustDnaGoogleScopes } from "@/features/gmail/google-oauth-scopes";
 import { getFirebaseServices } from "@/lib/firebase";
 
 export type TrustDNAUser = {
@@ -127,7 +128,8 @@ export async function signInWithGoogle(): Promise<AuthOutcome> {
   try {
     const { auth } = await persistSession();
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
+    requestTrustDnaGoogleScopes(provider);
+    provider.setCustomParameters({ prompt: "select_account consent", include_granted_scopes: "true" });
     const credential = await signInWithPopup(auth, provider);
     return successFor(credential.user);
   } catch (error) {

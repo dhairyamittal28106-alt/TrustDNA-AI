@@ -2,10 +2,11 @@
 
 import { FirebaseError } from "firebase/app";
 import { getAdditionalUserInfo, GoogleAuthProvider, linkWithPopup, reauthenticateWithPopup } from "firebase/auth";
+import { gmailReadOnlyScope, requestTrustDnaGoogleScopes } from "@/features/gmail/google-oauth-scopes";
 import { getFirebaseServices } from "@/lib/firebase";
 import type { GmailAuthorization } from "@/features/gmail/types";
 
-export const gmailReadOnlyScope = "https://www.googleapis.com/auth/gmail.readonly";
+export { gmailReadOnlyScope };
 
 export class GmailConnectorError extends Error {
   constructor(message: string, readonly code?: string) {
@@ -25,7 +26,7 @@ export class GmailConnector {
 
     try {
       const provider = new GoogleAuthProvider();
-      provider.addScope(gmailReadOnlyScope);
+      requestTrustDnaGoogleScopes(provider);
       provider.setCustomParameters({ prompt: "consent", include_granted_scopes: "true" });
       const hasGoogleProvider = user.providerData.some((providerData) => providerData.providerId === "google.com");
       const result = hasGoogleProvider
@@ -33,6 +34,7 @@ export class GmailConnector {
         : await linkWithPopup(user, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
       if (!credential?.accessToken) throw new GmailConnectorError("Google did not return a Gmail access token. Please try connecting again.", "GMAIL_TOKEN_MISSING");
+      await assertGmailReadOnlyScope(credential.accessToken);
       const profile = getAdditionalUserInfo(result)?.profile;
       const connectedEmail = profile && typeof profile.email === "string" ? profile.email : result.user.email;
       if (!connectedEmail) throw new GmailConnectorError("Google did not return an email address for this connection.", "GMAIL_EMAIL_MISSING");
@@ -40,6 +42,22 @@ export class GmailConnector {
     } catch (error) {
       throw new GmailConnectorError(friendlyGmailAuthError(error), error instanceof FirebaseError ? error.code : undefined);
     }
+  }
+}
+
+async function assertGmailReadOnlyScope(accessToken: string): Promise<void> {
+  let payload: unknown;
+  try {
+    const response = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${encodeURIComponent(accessToken)}`, { cache: "no-store" });
+    payload = await response.json().catch(() => null);
+    if (!response.ok) throw new Error("TOKEN_INFO_UNAVAILABLE");
+  } catch {
+    throw new GmailConnectorError("Gmail permission needs to be re-authorized.", "GMAIL_SCOPE_MISSING");
+  }
+
+  const scope = payload && typeof payload === "object" && "scope" in payload && typeof payload.scope === "string" ? payload.scope : "";
+  if (!scope.split(/\s+/).includes(gmailReadOnlyScope)) {
+    throw new GmailConnectorError("Gmail permission needs to be re-authorized.", "GMAIL_SCOPE_MISSING");
   }
 }
 

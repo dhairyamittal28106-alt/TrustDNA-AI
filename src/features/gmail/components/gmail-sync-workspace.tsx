@@ -47,11 +47,13 @@ export function GmailSyncWorkspace() {
       await persistSync(result, authorization.email);
       setNotice({ tone: "success", message: `Gmail sync complete. ${result.summary.messagesAnalyzed} sent messages created Genome ${result.profile?.version ?? result.versions.at(-1)?.version ?? "update"}.` });
     } catch (error) {
-      if (userId && connection && error instanceof GmailSyncApiError) {
+      if (userId && connection && requiresReauthorization(error)) {
         gmailConnectionStore.save(userId, {
           ...connection,
-          health: requiresReauthorization(error) ? "needs_reauthorization" : "error",
+          health: "needs_reauthorization",
         });
+      } else if (userId && connection && error instanceof GmailSyncApiError) {
+        gmailConnectionStore.save(userId, { ...connection, health: "error" });
       }
       setNotice({ tone: "error", message: friendlySyncError(error) });
     } finally {
@@ -151,12 +153,14 @@ function Notice({ tone, message }: { tone: "error" | "success" | "info"; message
 }
 
 function friendlySyncError(error: unknown): string {
+  if (requiresReauthorization(error)) return "Gmail permission needs to be re-authorized.";
   if (error instanceof GmailConnectorError || error instanceof GmailSyncApiError) return error.message;
   return "Gmail could not be synchronized. No Identity Genome update was created.";
 }
 
-function requiresReauthorization(error: GmailSyncApiError): boolean {
-  return error.code === "GMAIL_AUTH_EXPIRED" || error.code === "GMAIL_PERMISSION_DENIED";
+function requiresReauthorization(error: unknown): boolean {
+  return (error instanceof GmailSyncApiError && (error.code === "GMAIL_AUTH_EXPIRED" || error.code === "GMAIL_PERMISSION_DENIED"))
+    || (error instanceof GmailConnectorError && error.code === "GMAIL_SCOPE_MISSING");
 }
 
 function formatDate(value: string | undefined): string {
