@@ -21,13 +21,13 @@ import {
   UserRoundX,
   Workflow,
 } from "lucide-react";
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BrandMark } from "@/components/brand-mark";
 
-type LandingPageProps = { onStart: () => void };
+type LandingPageProps = { onStart: () => void; heroCompanion?: ReactNode };
 
 const threats = [
   { icon: BrainCircuit, title: "Deepfakes", body: "Synthetic media can now borrow anyone’s face, voice, or mannerisms." },
@@ -65,12 +65,13 @@ const highlights = [
   { icon: LockKeyhole, title: "Privacy-first", body: "Identity remains transparent, consent-aware, and controllable." },
 ];
 
-export function LandingPage({ onStart }: LandingPageProps) {
+export function LandingPage({ onStart, heroCompanion }: LandingPageProps) {
   return <>
     <section className="relative overflow-hidden px-5 pb-24 pt-5 md:px-10 lg:px-16">
       <div aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-[48rem] bg-[radial-gradient(circle_at_25%_8%,rgb(107_83_239_/_28%),transparent_24rem),radial-gradient(circle_at_78%_18%,rgb(35_176_245_/_18%),transparent_27rem)]" />
       <header className="mx-auto flex max-w-7xl items-center justify-between"><BrandMark /><Button onClick={onStart} variant="ghost" className="text-sm text-slate-300 hover:bg-white/5 hover:text-white">Judge Mode <ArrowRight className="size-4" /></Button></header>
       <div className="mx-auto grid max-w-7xl gap-12 pb-16 pt-20 lg:grid-cols-[1.1fr_.9fr] lg:items-center lg:pt-28"><motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}><div className="inline-flex items-center gap-2 rounded-full border border-[#a598ff]/20 bg-[#8d78ff]/10 px-3 py-1.5 text-xs font-medium text-[#bcb2ff]"><Sparkles className="size-3.5" /> THE AI TRUST INFRASTRUCTURE FOR HUMAN IDENTITY</div><h1 className="mt-7 max-w-3xl text-5xl font-semibold leading-[1.02] tracking-[-.055em] text-white sm:text-6xl lg:text-7xl">Trust can&apos;t be generated.<br /><span className="bg-gradient-to-r from-[#b5a6ff] to-[#66d3ff] bg-clip-text text-transparent">It has to be verified.</span></h1><p className="mt-7 max-w-xl text-base leading-7 text-slate-300 md:text-lg">AI can now clone voices, forge emails, and impersonate anyone. TrustDNA investigates digital identity using explainable AI, forensic evidence, and specialized AI investigators.</p><div className="mt-9 flex flex-wrap gap-3"><Button onClick={onStart} className="h-12 rounded-xl bg-[#8b78f6] px-5 text-white shadow-xl shadow-violet-950/80 hover:bg-[#9d8cff]">Start Investigation <ArrowRight className="size-4" /></Button><Button onClick={onStart} variant="outline" className="h-12 rounded-xl border-white/15 bg-white/[.03] px-5 text-slate-200 hover:bg-white/[.08] hover:text-white">Try Judge Mode</Button></div><p className="mt-5 text-xs text-slate-500">Every investigation ends with evidence—not opinions.</p></motion.div><CasePreview /></div>
+      {heroCompanion && <div className="mx-auto max-w-md pb-8 xl:hidden">{heroCompanion}</div>}
       <div className="mx-auto flex max-w-7xl items-center gap-3 text-xs text-slate-500"><ArrowDown aria-hidden="true" className="size-3.5 text-[#a99bff]" />Built for the age when AI can imitate anyone.</div>
     </section>
 
