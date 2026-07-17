@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/components/auth-provider";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -15,7 +16,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={`dark ${geistSans.variable} ${geistMono.variable}`}>
       <body className="min-h-screen antialiased">
-        <TooltipProvider>{children}</TooltipProvider>
+        <AuthProvider><TooltipProvider>{children}</TooltipProvider></AuthProvider>
       </body>
     </html>
   );
