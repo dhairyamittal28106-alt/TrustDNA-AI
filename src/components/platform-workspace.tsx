@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { GuardianIntelligenceSummary } from "@/features/identity-intelligence/components/guardian-intelligence-summary";
 import { IdentityIntelligenceWorkspace } from "@/features/identity-intelligence/components/identity-intelligence-workspace";
+import { IdentityTwinWorkspace } from "@/features/identity-twin/components/identity-twin-workspace";
 
-export const platformSections = ["dashboard", "genome", "investigations", "cases", "certificates", "reports", "profile", "settings"] as const;
+export const platformSections = ["dashboard", "genome", "twin", "investigations", "cases", "certificates", "reports", "profile", "settings"] as const;
 export type PlatformSection = typeof platformSections[number];
 
-const sectionCopy: Record<Exclude<PlatformSection, "dashboard" | "genome">, { eyebrow: string; title: string; body: string; icon: LucideIcon; action: string; actionHref: string }> = {
+const sectionCopy: Record<Exclude<PlatformSection, "dashboard" | "genome" | "twin">, { eyebrow: string; title: string; body: string; icon: LucideIcon; action: string; actionHref: string }> = {
   investigations: { eyebrow: "INVESTIGATIONS", title: "Open a new evidence-backed investigation.", body: "Bring a suspicious artifact to TrustDNA and let specialized investigators turn signals into an explainable decision.", icon: ShieldAlert, action: "Start an investigation", actionHref: "/demo" },
   cases: { eyebrow: "CASE FILES", title: "Your resolved cases belong in one place.", body: "Review the full evidence trail, final verdict, and recommended actions for every investigation.", icon: FileText, action: "Explore a case file", actionHref: "/demo" },
   certificates: { eyebrow: "CERTIFICATES", title: "Portable trust credentials, backed by evidence.", body: "TrustDNA Certificates make an Identity Genome’s trust posture clear, shareable, and verifiable.", icon: BadgeCheck, action: "View certificate experience", actionHref: "/demo" },
@@ -22,6 +23,7 @@ const sectionCopy: Record<Exclude<PlatformSection, "dashboard" | "genome">, { ey
 export function PlatformWorkspace({ section }: { section: PlatformSection }) {
   if (section === "dashboard") return <Dashboard />;
   if (section === "genome") return <GenomeWorkspace />;
+  if (section === "twin") return <TwinWorkspace />;
   return <GenericWorkspace content={sectionCopy[section]} section={section} />;
 }
 
@@ -31,6 +33,10 @@ function Dashboard() {
 
 function GenomeWorkspace() {
   return <PlatformShell active="genome"><IdentityIntelligenceWorkspace /></PlatformShell>;
+}
+
+function TwinWorkspace() {
+  return <PlatformShell active="twin"><IdentityTwinWorkspace /></PlatformShell>;
 }
 
 function GenericWorkspace({ content, section }: { content: { eyebrow: string; title: string; body: string; icon: LucideIcon; action: string; actionHref: string }; section: PlatformSection }) {

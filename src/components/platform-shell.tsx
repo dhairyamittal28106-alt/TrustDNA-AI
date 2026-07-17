@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, FileText, Fingerprint, LayoutDashboard, LogOut, ShieldAlert, ShieldCheck, SlidersHorizontal, UserRound, type LucideIcon } from "lucide-react";
+import { BadgeCheck, BrainCircuit, FileText, Fingerprint, LayoutDashboard, LogOut, ShieldAlert, ShieldCheck, SlidersHorizontal, UserRound, type LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { useAuth } from "@/components/auth-provider";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/genome", label: "Identity Genome", icon: Fingerprint },
+  { href: "/twin", label: "Identity Twin", icon: BrainCircuit },
   { href: "/investigations", label: "Investigations", icon: ShieldAlert },
   { href: "/cases", label: "Case Files", icon: FileText },
   { href: "/certificates", label: "Certificates", icon: BadgeCheck },
