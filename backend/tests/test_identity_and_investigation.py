@@ -52,6 +52,11 @@ async def test_plain_text_sample_builds_identity_profile(client: AsyncClient) ->
     assert response.status_code == 201
     assert response.json()["sample_count"] == 1
     assert response.json()["embedding_count"] == 1
+    assert response.json()["version"] == "v1"
+    assert response.json()["features"]["greeting_style"] == "informal"
+    versions = await client.get(f"/api/v1/identity-genomes/{genome_id}/versions")
+    assert versions.status_code == 200
+    assert versions.json()[0]["version"] == "v1"
 
 
 async def test_text_investigation_returns_deterministic_cipher_verdict(client: AsyncClient) -> None:
@@ -80,3 +85,7 @@ async def test_text_investigation_returns_deterministic_cipher_verdict(client: A
     assert response.status_code == 200
     assert response.json()["risk"]["verdict"] == "authentic"
     assert response.json()["agents"][0]["agent"] == "cipher"
+    assert response.json()["risk"]["breakdown"]["writing"] > 0.5
+    assert response.json()["certificate"]["certificate_number"].startswith("TDNA-")
+    assert response.json()["investigation"]["lifecycle_state"] == "closed"
+    assert response.json()["investigation"]["genome_version"] == "v1"

@@ -18,6 +18,18 @@ class InvestigationStatus(StrEnum):
     FAILED = "failed"
 
 
+class CaseLifecycleState(StrEnum):
+    CASE_CREATED = "case_created"
+    COLLECTING_EVIDENCE = "collecting_evidence"
+    DISPATCHING_AGENTS = "dispatching_agents"
+    AWAITING_RESULTS = "awaiting_results"
+    AGGREGATING = "aggregating"
+    RISK_ANALYSIS = "risk_analysis"
+    GENERATING_FINDINGS = "generating_findings"
+    GENERATING_CERTIFICATE = "generating_certificate"
+    CLOSED = "closed"
+
+
 class RiskLevel(StrEnum):
     LOW = "low"
     MEDIUM = "medium"

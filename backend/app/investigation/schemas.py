@@ -4,7 +4,9 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.agents.contracts import AgentResult
+from app.certificate.schemas import CertificateResponse
 from app.domain.enums import ArtifactType, InvestigationStatus, RiskLevel, Verdict
+from app.investigation.models import LifecycleEvent
 from app.investigation.risk import RiskAssessment
 
 
@@ -22,7 +24,10 @@ class InvestigationResponse(BaseModel):
     identity_genome_id: UUID
     artifact_type: ArtifactType
     artifact_reference: str
+    genome_version: str
     status: InvestigationStatus
+    lifecycle_state: str
+    timeline: list[LifecycleEvent]
     verdict: Verdict
     risk_level: RiskLevel | None
     opened_at: datetime
@@ -39,3 +44,4 @@ class InvestigationRunResponse(BaseModel):
     investigation: InvestigationResponse
     agents: list[AgentResult]
     risk: RiskAssessment
+    certificate: CertificateResponse

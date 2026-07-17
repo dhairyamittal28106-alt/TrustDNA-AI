@@ -1,9 +1,21 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.domain.enums import ArtifactType, InvestigationStatus, RiskLevel, Verdict
+from app.domain.enums import (
+    ArtifactType,
+    CaseLifecycleState,
+    InvestigationStatus,
+    RiskLevel,
+    Verdict,
+)
+
+
+class LifecycleEvent(BaseModel):
+    state: CaseLifecycleState
+    occurred_at: datetime
+    details: dict[str, str] = Field(default_factory=dict)
 
 
 class Investigation(BaseModel):
@@ -14,7 +26,10 @@ class Investigation(BaseModel):
     identity_genome_id: UUID
     artifact_type: ArtifactType
     artifact_reference: str
+    genome_version: str
     status: InvestigationStatus
+    lifecycle_state: CaseLifecycleState
+    timeline: list[LifecycleEvent] = Field(default_factory=list)
     verdict: Verdict
     risk_level: RiskLevel | None
     opened_at: datetime

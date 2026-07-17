@@ -12,6 +12,7 @@ class InvestigationContext(BaseModel):
 
     case_id: UUID
     identity_genome_id: UUID
+    identity_genome_version: str = "v0"
     identity_vocabulary: set[str] = Field(default_factory=set)
     artifact_type: ArtifactType
     artifact_reference: str = Field(min_length=1, max_length=500)

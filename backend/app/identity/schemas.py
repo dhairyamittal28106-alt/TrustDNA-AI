@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.artifact.models import IdentityProfile
+from app.artifact.models import IdentityFeatures, IdentityProfile
 
 
 class CreateIdentityGenomeRequest(BaseModel):
@@ -35,7 +35,20 @@ class IdentityProfileResponse(BaseModel):
     average_word_count: float
     embedding_count: int
     updated_at: datetime
+    features: IdentityFeatures
+    version: str | None = None
 
     @classmethod
     def from_profile(cls, profile: IdentityProfile) -> "IdentityProfileResponse":
         return cls.model_validate(profile, from_attributes=True)
+
+
+class IdentityGenomeVersionResponse(BaseModel):
+    id: UUID
+    identity_genome_id: UUID
+    version: str
+    source_count: int
+    confidence: float
+    fingerprint: str
+    features: IdentityFeatures
+    created_at: datetime

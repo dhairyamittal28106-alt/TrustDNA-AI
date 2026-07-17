@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
+from app.certificate.schemas import CertificateResponse
 from app.core.dependencies import get_investigation_service
 from app.core.openapi import ERROR_RESPONSES
 from app.investigation.schemas import (
@@ -47,9 +48,12 @@ async def run_text_investigation(
     request: RunTextInvestigationRequest,
     service: InvestigationService = Depends(get_investigation_service),
 ) -> InvestigationRunResponse:
-    investigation, agents, risk = await service.run_text(investigation_id, request.content)
+    investigation, agents, risk, certificate = await service.run_text(
+        investigation_id, request.content
+    )
     return InvestigationRunResponse(
         investigation=InvestigationResponse.model_validate(investigation, from_attributes=True),
         agents=agents,
         risk=risk,
+        certificate=CertificateResponse.model_validate(certificate, from_attributes=True),
     )

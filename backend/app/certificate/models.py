@@ -10,6 +10,7 @@ class TrustDNACertificate(BaseModel):
     id: UUID
     certificate_number: str
     identity_genome_id: UUID
+    investigation_id: UUID
     identity_confidence: float = Field(ge=0, le=1)
     trust_rating: str
     issued_at: datetime

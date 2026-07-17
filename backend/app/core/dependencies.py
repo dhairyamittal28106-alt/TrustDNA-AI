@@ -3,11 +3,16 @@ from fastapi import Request
 from app.artifact.service import ArtifactIngestionService
 from app.certificate.service import CertificateService
 from app.identity.service import IdentityGenomeService
+from app.identity.versioning import IdentityGenomeVersionService
 from app.investigation.service import InvestigationService
 
 
 def get_identity_service(request: Request) -> IdentityGenomeService:
     return request.app.state.identity_service
+
+
+def get_identity_version_service(request: Request) -> IdentityGenomeVersionService:
+    return request.app.state.identity_version_service
 
 
 def get_investigation_service(request: Request) -> InvestigationService:

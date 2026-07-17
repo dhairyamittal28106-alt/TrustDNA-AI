@@ -4,7 +4,7 @@ from uuid import UUID
 from app.artifact.contracts import EmbeddingProvider
 from app.artifact.models import Artifact, EmbeddedChunk, IdentityProfile
 from app.artifact.pipeline import ArtifactPipeline
-from app.artifact.processors import tokens
+from app.artifact.processors import identity_features, tokens
 from app.artifact.repository import (
     InMemoryArtifactRepository,
     InMemoryEmbeddingStore,
@@ -56,6 +56,7 @@ class ArtifactIngestionService:
             / ((profile.sample_count if profile else 0) + 1),
             embedding_count=(profile.embedding_count if profile else 0) + len(vectors),
             vocabulary=vocabulary,
+            features=identity_features(artifact.redacted_text or ""),
             updated_at=datetime.now(UTC),
         )
         return await self._profiles.save(profile=updated)

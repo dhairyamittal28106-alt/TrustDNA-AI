@@ -2,7 +2,7 @@ import hashlib
 import re
 
 from app.artifact.contracts import ArtifactProcessor, EmbeddingProvider
-from app.artifact.models import Artifact
+from app.artifact.models import Artifact, EvidenceFeatures
 from app.domain.enums import ArtifactType
 
 
@@ -58,6 +58,31 @@ class MetadataExtractor(ArtifactProcessor):
         return artifact.model_copy(update={"metadata": metadata})
 
 
+class EvidenceFeatureExtractor(ArtifactProcessor):
+    _financial_terms = re.compile(r"\b(invoice|payment|wire|transfer|bank|money|funds)\b", re.I)
+    _credential_terms = re.compile(
+        r"\b(password|passcode|otp|login|credential|verification code)\b", re.I
+    )
+    _threat_terms = re.compile(r"\b(urgent|immediately| 마지막|suspend|legal action|警告)\b", re.I)
+    _domain_pattern = re.compile(r"\b(?:https?://|www\.)[^\s]+", re.I)
+
+    async def process(self, artifact: Artifact) -> Artifact:
+        text = artifact.redacted_text or artifact.normalized_text or artifact.content
+        words = text.split()
+        caps_words = [word for word in words if len(word) > 2 and word.isupper()]
+        greeting = "formal" if re.search(r"\b(dear|hello)\b", text, re.I) else "informal"
+        features = EvidenceFeatures(
+            all_caps_ratio=round(len(caps_words) / max(len(words), 1), 4),
+            exclamation_count=text.count("!"),
+            financial_request=bool(self._financial_terms.search(text)),
+            credential_request=bool(self._credential_terms.search(text)),
+            suspicious_domain=bool(self._domain_pattern.search(text)),
+            threat_language=bool(self._threat_terms.search(text)),
+            greeting_style=greeting,
+        )
+        return artifact.model_copy(update={"evidence_features": features})
+
+
 class TextChunker(ArtifactProcessor):
     def __init__(self, chunk_size: int = 500) -> None:
         self._chunk_size = chunk_size
@@ -88,3 +113,28 @@ class DeterministicEmbeddingProvider(EmbeddingProvider):
 
 def tokens(text: str) -> set[str]:
     return {token.lower() for token in re.findall(r"[a-zA-Z][a-zA-Z'-]{1,}", text)}
+
+
+def identity_features(text: str):
+    from app.artifact.models import IdentityFeatures
+
+    words = text.split()
+    sentences = [part for part in re.split(r"[.!?]+", text) if part.strip()]
+    vocabulary = tokens(text)
+    return IdentityFeatures(
+        vocabulary_richness=round(len(vocabulary) / max(len(words), 1), 4),
+        average_sentence_length=round(len(words) / max(len(sentences), 1), 2),
+        greeting_style="formal" if re.search(r"\b(dear|hello)\b", text, re.I) else "informal",
+        signature_style="signoff"
+        if re.search(r"\b(best|regards|sincerely)\b", text, re.I)
+        else "none",
+        emoji_frequency=round(sum(ord(char) > 0x1F000 for char in text) / max(len(text), 1), 4),
+        professional_tone=round(
+            len(re.findall(r"\b(strategy|product|team|project|research)\b", text, re.I))
+            / max(len(words), 1),
+            4,
+        ),
+        domain_terms=sorted(vocabulary)[:12],
+        average_response_length=float(len(words)),
+        punctuation_habits={mark: text.count(mark) for mark in (",", ";", ":", "!")},
+    )

@@ -10,6 +10,7 @@ from app.artifact.pipeline import ArtifactPipeline
 from app.artifact.processors import (
     ArtifactClassifier,
     DeterministicEmbeddingProvider,
+    EvidenceFeatureExtractor,
     MetadataExtractor,
     PiiRedactor,
     TextChunker,
@@ -36,8 +37,12 @@ from app.core.logging import configure_logging
 from app.core.openapi import ERROR_RESPONSES
 from app.core.request_id import RequestIdMiddleware
 from app.domain.enums import AgentName
-from app.identity.repository import InMemoryIdentityGenomeRepository
+from app.identity.repository import (
+    InMemoryIdentityGenomeRepository,
+    InMemoryIdentityGenomeVersionRepository,
+)
 from app.identity.service import IdentityGenomeService
+from app.identity.versioning import IdentityGenomeVersionService
 from app.investigation.repository import InMemoryInvestigationRepository
 from app.investigation.risk import RiskEngine
 from app.investigation.sentinel import SentinelOrchestrator
@@ -52,6 +57,9 @@ async def lifespan(app: FastAPI):
     configure_logging(settings.log_level)
     identity_service = IdentityGenomeService(InMemoryIdentityGenomeRepository())
     app.state.identity_service = identity_service
+    app.state.identity_version_service = IdentityGenomeVersionService(
+        InMemoryIdentityGenomeVersionRepository()
+    )
     app.state.certificate_service = CertificateService(InMemoryCertificateRepository())
     app.state.artifact_ingestion_service = ArtifactIngestionService(
         ArtifactPipeline(
@@ -61,6 +69,7 @@ async def lifespan(app: FastAPI):
                 TextNormalizer(),
                 PiiRedactor(),
                 MetadataExtractor(),
+                EvidenceFeatureExtractor(),
                 TextChunker(),
             ]
         ),
@@ -81,6 +90,8 @@ async def lifespan(app: FastAPI):
         identity_service,
         app.state.artifact_ingestion_service,
         app.state.sentinel,
+        app.state.identity_version_service,
+        app.state.certificate_service,
     )
     logger.info("application_started", environment=settings.environment)
     yield
