@@ -1,5 +1,5 @@
-import { TrustDashboard } from "@/components/trust-dashboard";
+import { TrustDNAExperience } from "@/components/trustdna-experience";
 
 export default function Home() {
-  return <TrustDashboard />;
+  return <TrustDNAExperience />;
 }
