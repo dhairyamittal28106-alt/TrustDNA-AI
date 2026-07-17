@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import {
   CheckCircle2,
@@ -68,6 +69,12 @@ export function SourceManager({ onIngest, busy }: SourceManagerProps) {
     (source) => source.availability === "coming_soon",
   );
   const plannedFormatSources = formatSources.filter(
+    (source) => source.availability === "coming_soon",
+  );
+  const integrationReadyConnectors = connectorSources.filter(
+    (source) => source.availability === "integration_ready",
+  );
+  const plannedConnectors = connectorSources.filter(
     (source) => source.availability === "coming_soon",
   );
 
@@ -167,7 +174,7 @@ export function SourceManager({ onIngest, busy }: SourceManagerProps) {
             Add evidence you control.
           </h2>
           <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
-            Submit consented plain text to create explainable Identity Genome signals. Source connections and media extraction stay disabled until their dedicated extractors are available.
+            Submit consented plain text to create explainable Identity Genome signals, or connect Gmail to analyze a consented sent-email batch through its dedicated source flow.
           </p>
         </div>
         <div className="flex items-center gap-2 rounded-xl border border-sky-300/10 bg-sky-300/[.05] px-3 py-2 text-xs text-slate-300">
@@ -336,13 +343,19 @@ export function SourceManager({ onIngest, busy }: SourceManagerProps) {
         </div>
         <details className="group mt-3 rounded-2xl border border-white/[.07] bg-black/10">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 text-sm font-medium text-slate-200 marker:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a99bff]/60">
-            <span>Optional connectors · {connectorSources.length} planned</span>
+            <span>Optional connectors · {plannedConnectors.length} planned</span>
             <ChevronDown aria-hidden="true" className="size-4 text-slate-500 transition group-open:rotate-180" />
           </summary>
           <div className="border-t border-white/[.07] p-4 pt-3">
-            <p className="text-xs leading-5 text-slate-500">Connectors are displayed for transparency only. No OAuth or account connection is initiated from this screen.</p>
+            <p className="text-xs leading-5 text-slate-500">Available connectors open their own consent flow. Planned connectors remain disabled until their extractors are ready.</p>
+            {integrationReadyConnectors.map((source) => (
+              <Link key={source.id} href="/gmail" className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[.045] p-3 text-sm text-cyan-50 transition hover:border-cyan-300/30 hover:bg-cyan-300/[.08]">
+                <span><span className="font-medium">{source.label}</span><span className="mt-1 block text-xs text-cyan-100/65">{source.description}</span></span>
+                <span className="font-mono text-[9px] tracking-[.09em] text-cyan-100">CONNECT</span>
+              </Link>
+            ))}
             <ul className="mt-3 flex flex-wrap gap-2" aria-label="Planned source connectors">
-              {connectorSources.map((source) => (
+              {plannedConnectors.map((source) => (
                 <li key={source.id}>
                   <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/[.08] bg-white/[.02] px-2.5 py-1.5 text-xs text-slate-500">
                     {source.label}

@@ -1,6 +1,6 @@
 export type KnowledgeOrigin = "extracted" | "derived" | "awaiting_evidence" | "preview";
 
-export type SourceAvailability = "text_ready" | "coming_soon";
+export type SourceAvailability = "text_ready" | "integration_ready" | "coming_soon";
 export type SourceKind = "primary" | "connector" | "format";
 export type SourceRecordStatus = "ingested" | "ready" | "coming_soon";
 

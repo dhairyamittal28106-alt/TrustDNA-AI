@@ -15,6 +15,7 @@ import { KnowledgeGraph } from "@/features/identity-intelligence/components/know
 import { SkillRadar } from "@/features/identity-intelligence/components/skill-radar";
 import { SourceCoverage } from "@/features/identity-intelligence/components/source-coverage";
 import { SourceManager } from "@/features/identity-intelligence/components/source-manager";
+import { GmailConnectionCard } from "@/features/gmail/components/gmail-connection-card";
 import { EvolutionLifecycle } from "@/features/identity-evolution/components/evolution-lifecycle";
 import { EvolutionRecommendations } from "@/features/identity-evolution/components/evolution-recommendations";
 import { GenomeDiffPanel } from "@/features/identity-evolution/components/genome-diff-panel";
@@ -138,6 +139,7 @@ export function IdentityIntelligenceWorkspace() {
     <motion.div initial={{ opacity: 0, y: reduceMotion ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduceMotion ? 0 : 0.08, duration: reduceMotion ? 0 : 0.42 }} className="mt-8 grid gap-5 xl:grid-cols-[.78fr_1.22fr]"><IdentityGenomeHologram phase={busy ? "genesis" : snapshot.hasExtractedKnowledge ? "sentinel" : "genome_creation"} identityLabel={user?.displayName ?? "Your Identity Genome"} trustRating={snapshot.hasExtractedKnowledge ? "Evidence-led" : "Pending"} genomeVersion={snapshot.latestVersion?.version} confidence={snapshot.genomeConfidence} status={busy ? "Evolving" : snapshot.hasExtractedKnowledge ? "Evidence linked" : "Awaiting source"} currentState={busy ? "Guardian is integrating new consented evidence" : evolution.latest?.guardianInsight.observation ?? "Guardian ready for its first supported source"} /><IdentityMap snapshot={snapshot} /></motion.div>
 
     <div className="mt-5"><SourceManager onIngest={ingestSource} busy={busy} /></div>
+    <div className="mt-5"><GmailConnectionCard /></div>
 
     <div className="mt-5"><EvolutionLifecycle busy={busy} evolution={evolution} /></div>
 

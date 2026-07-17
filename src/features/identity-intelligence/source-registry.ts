@@ -20,7 +20,7 @@ export const formatSources: SourceDefinition[] = [
 export const connectorSources: SourceDefinition[] = [
   { id: "google-drive", label: "Google Drive", description: "Connector coming soon.", kind: "connector", availability: "coming_soon" },
   { id: "google-docs", label: "Google Docs", description: "Connector coming soon.", kind: "connector", availability: "coming_soon" },
-  { id: "gmail", label: "Gmail", description: "Connector coming soon.", kind: "connector", availability: "coming_soon" },
+  { id: "gmail", label: "Gmail", description: "Consent-based sent-email synchronization.", kind: "connector", availability: "integration_ready" },
   { id: "outlook", label: "Outlook", description: "Connector coming soon.", kind: "connector", availability: "coming_soon" },
   { id: "github", label: "GitHub", description: "Connector coming soon.", kind: "connector", availability: "coming_soon" },
   { id: "gitlab", label: "GitLab", description: "Connector coming soon.", kind: "connector", availability: "coming_soon" },
