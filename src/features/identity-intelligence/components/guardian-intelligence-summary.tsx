@@ -8,6 +8,7 @@ import { buildGenomeSnapshot } from "@/features/identity-intelligence/adapter";
 import { loadGenomeIntelligence } from "@/features/identity-intelligence/api";
 import { ProvenanceBadge } from "@/features/identity-intelligence/components/provenance-badge";
 import { browserGenomeStore } from "@/features/identity-intelligence/session";
+import { knowledgeRepository } from "@/features/identity-knowledge/knowledge-repository";
 import type { GenomeSnapshot } from "@/features/identity-intelligence/types";
 
 type SummaryState =
@@ -44,7 +45,7 @@ export function GuardianIntelligenceSummary() {
 
       try {
         const payload = await loadGenomeIntelligence(session.genomeId);
-        const snapshot = await buildGenomeSnapshot(payload, session.sources);
+        const snapshot = await buildGenomeSnapshot(payload, session.sources, knowledgeRepository.load(user.uid));
         if (!active) return;
         setState({ kind: snapshot.hasExtractedKnowledge ? "ready" : "empty", snapshot });
       } catch {

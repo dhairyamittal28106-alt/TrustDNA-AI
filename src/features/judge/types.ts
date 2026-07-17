@@ -1,7 +1,7 @@
 export type AgentName = "genesis" | "cipher" | "chronos" | "forensiq" | "spectra" | "atlas";
 
 export type Scenario = {
-  id: "fake-ceo-email" | "cloned-voice" | "forged-resume" | "fake-certificate";
+  id: string;
   title: string;
   subject: string;
   artifactReference: string;

@@ -1,6 +1,7 @@
 import type { TwinIntent } from "@/features/identity-twin/types";
 
 const intentPatterns: Array<{ intent: TwinIntent; pattern: RegExp }> = [
+  { intent: "identity_facts", pattern: /\b(name|who\s+am\s+i|dream|ambition|university|college|school|degree|education|favorite|cricketer|player|team|project|projects|skill|skills|technology|technologies|goal|goals|current role|career|timeline)\b/i },
   { intent: "artifact_comparison", pattern: /\b(this|an|the)\s+(email|message|artifact|document|resume)|\bdoes\s+(this|it).{0,40}\bsound\s+like\s+me\b|\bcompare\b/i },
   { intent: "evidence_requirements", pattern: /\b(career|job|internship|goal|goals|strength|weakness|decision|leadership|preference|future|values|interest|relationship)\b/i },
   { intent: "observed_knowledge", pattern: /\b(technology|technologies|skill|skills|domain|expertise|knowledge|know|terms)\b/i },

@@ -8,6 +8,7 @@ import type {
 } from "@/features/identity-intelligence/types";
 
 export type TwinIntent =
+  | "identity_facts"
   | "communication"
   | "observed_knowledge"
   | "artifact_comparison"

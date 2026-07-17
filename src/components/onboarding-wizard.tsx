@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth-provider";
 import { markOnboardingComplete } from "@/features/auth/provider";
 import { connectorSources, primarySources } from "@/features/identity-intelligence/source-registry";
+import { guardianProfileStore } from "@/features/guardian/guardian-profile-store";
 
 const buildStages = [
   "Creating your private source registry",
@@ -26,10 +27,6 @@ export function OnboardingWizard() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
 
-  useEffect(() => () => {
-    if (photoPreview) URL.revokeObjectURL(photoPreview);
-  }, [photoPreview]);
-
   useEffect(() => {
     if (step !== 3) return;
     const timer = window.setInterval(() => setProgress((current) => Math.min(current + 1, buildStages.length)), 720);
@@ -39,9 +36,14 @@ export function OnboardingWizard() {
   function handlePhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (photoPreview) URL.revokeObjectURL(photoPreview);
     setPhotoName(file.name);
-    setPhotoPreview(URL.createObjectURL(file));
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      if (typeof reader.result !== "string") return;
+      setPhotoPreview(reader.result);
+      if (user?.uid) guardianProfileStore.save(user.uid, reader.result);
+    });
+    reader.readAsDataURL(file);
   }
 
   const next = () => setStep((current) => Math.min(current + 1, 4));

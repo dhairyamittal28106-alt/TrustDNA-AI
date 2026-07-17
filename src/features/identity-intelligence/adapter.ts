@@ -1,4 +1,6 @@
 import { DeterministicKnowledgeExtractor } from "@/features/identity-intelligence/contracts";
+import { KnowledgeVersionManager } from "@/features/identity-knowledge/knowledge-version-manager";
+import type { IdentityKnowledgeObject } from "@/features/identity-knowledge/types";
 import type {
   GenomeSection,
   GenomeSnapshot,
@@ -19,8 +21,8 @@ const pendingCategories = [
   { id: "timeline", title: "Life Timeline", detail: "Milestones require a future timeline extractor and source-level provenance.", traits: ["Life milestones", "Risk profile"] },
 ] as const;
 
-export async function buildGenomeSnapshot(payload: IntelligenceApiPayload | undefined, sources: SourceRecord[]): Promise<GenomeSnapshot> {
-  if (!payload) return emptyGenomeSnapshot(sources);
+export async function buildGenomeSnapshot(payload: IntelligenceApiPayload | undefined, sources: SourceRecord[], knowledgeHistory: IdentityKnowledgeObject[] = []): Promise<GenomeSnapshot> {
+  if (!payload) return emptyGenomeSnapshot(sources, knowledgeHistory);
 
   const latestVersion = payload.versions[payload.versions.length - 1];
   const features = payload.profile?.features ?? latestVersion?.features;
@@ -33,7 +35,7 @@ export async function buildGenomeSnapshot(payload: IntelligenceApiPayload | unde
 
   if (!features) {
     return {
-      ...emptyGenomeSnapshot(sources),
+      ...emptyGenomeSnapshot(sources, knowledgeHistory),
       genome: payload.genome,
       latestVersion,
       versions: payload.versions,
@@ -44,11 +46,14 @@ export async function buildGenomeSnapshot(payload: IntelligenceApiPayload | unde
     };
   }
 
-  const knowledgeObjects = await new DeterministicKnowledgeExtractor().extract({ features, evidenceSources, updatedAt });
-  const sections = buildSections(knowledgeObjects, confidence, evidenceSources, updatedAt);
-  const insights = buildInsights(features, latestVersion?.version, confidence, sourceCount, updatedAt);
-  const timeline = buildTimeline(payload, evidenceSources);
-  const knowledgeGraph = buildKnowledgeGraph(knowledgeObjects, evidenceSources);
+  const featureKnowledge = await new DeterministicKnowledgeExtractor().extract({ features, evidenceSources, updatedAt });
+  const identityFacts = knowledgeHistory.filter((fact) => fact.status === "active");
+  const knowledgeObjects = [...identityFacts.map(toKnowledgeObject), ...featureKnowledge];
+  const sections = buildSections(knowledgeObjects, identityFacts, confidence, evidenceSources, updatedAt);
+  const insights = buildInsights(features, latestVersion?.version, confidence, sourceCount, updatedAt, identityFacts);
+  const timeline = [...buildTimeline(payload, evidenceSources), ...new KnowledgeVersionManager().timeline(knowledgeHistory)]
+    .sort((left, right) => (right.timestamp ?? "").localeCompare(left.timestamp ?? ""));
+  const knowledgeGraph = buildKnowledgeGraph(knowledgeObjects, identityFacts, evidenceSources);
 
   return {
     genome: payload.genome,
@@ -62,6 +67,8 @@ export async function buildGenomeSnapshot(payload: IntelligenceApiPayload | unde
     timeline,
     knowledgeGraph,
     knowledgeObjects,
+    identityFacts,
+    knowledgeHistory,
     sourceCount,
     genomeConfidence: confidence,
     fingerprint: latestVersion?.fingerprint,
@@ -69,7 +76,7 @@ export async function buildGenomeSnapshot(payload: IntelligenceApiPayload | unde
   };
 }
 
-export function emptyGenomeSnapshot(sources: SourceRecord[] = []): GenomeSnapshot {
+export function emptyGenomeSnapshot(sources: SourceRecord[] = [], knowledgeHistory: IdentityKnowledgeObject[] = []): GenomeSnapshot {
   const pendingSections = buildPendingSections();
   return {
     sources,
@@ -127,18 +134,32 @@ export function emptyGenomeSnapshot(sources: SourceRecord[] = []): GenomeSnapsho
       edges: [{ from: "genome", to: "source" }],
     },
     knowledgeObjects: [],
+    identityFacts: knowledgeHistory.filter((fact) => fact.status === "active"),
+    knowledgeHistory,
     sourceCount: 0,
     hasExtractedKnowledge: false,
   };
 }
 
-function buildSections(knowledgeObjects: KnowledgeObject[], confidence: number | undefined, evidenceSources: string[], updatedAt: string | undefined): GenomeSection[] {
+function buildSections(knowledgeObjects: KnowledgeObject[], identityFacts: IdentityKnowledgeObject[], confidence: number | undefined, evidenceSources: string[], updatedAt: string | undefined): GenomeSection[] {
   const sectionDefinitions = [
     { id: "communication", title: "Communication Profile", description: "Greeting, signature, and language facts observed from analyzed text." },
     { id: "writing", title: "Writing Style", description: "Measured sentence, response, and punctuation signals from analyzed text." },
     { id: "vocabulary", title: "Vocabulary & Observed Knowledge", description: "Measured vocabulary and observed domain terms. These are not verified skills or interests." },
     { id: "professional", title: "Professional Communication", description: "Deterministic tone and expression signals from analyzed text." },
   ];
+
+  const identityFactSection: GenomeSection = {
+    id: "identity-facts",
+    title: "Identity Facts",
+    description: "Direct statements extracted from consented evidence. Each fact keeps its source, version, confidence, and evidence excerpt.",
+    origin: identityFacts.length ? "extracted" : "awaiting_evidence",
+    genomeConfidence: confidence,
+    evidenceSources: identityFacts.map((fact) => fact.provenance.source),
+    lastUpdated: identityFacts[0]?.provenance.timestamp,
+    traits: knowledgeObjects.filter((knowledge) => knowledge.category === "identity-facts").map((knowledge) => ({ ...knowledge, genomeConfidence: confidence })),
+    emptyMessage: "No directly stated identity facts have been extracted yet.",
+  };
 
   const extracted = sectionDefinitions.map((section) => ({
     ...section,
@@ -149,7 +170,7 @@ function buildSections(knowledgeObjects: KnowledgeObject[], confidence: number |
     traits: knowledgeObjects.filter((knowledge) => knowledge.category === section.id).map((knowledge) => ({ ...knowledge, genomeConfidence: confidence })),
   }));
 
-  return [...extracted, ...buildPendingSections()];
+  return [identityFactSection, ...extracted, ...buildPendingSections()];
 }
 
 function buildPendingSections(): GenomeSection[] {
@@ -172,7 +193,7 @@ function buildPendingSections(): GenomeSection[] {
   }));
 }
 
-function buildInsights(features: IdentityFeatures, version: string | undefined, confidence: number | undefined, sourceCount: number, updatedAt: string | undefined): GuardianInsight[] {
+function buildInsights(features: IdentityFeatures, version: string | undefined, confidence: number | undefined, sourceCount: number, updatedAt: string | undefined, identityFacts: IdentityKnowledgeObject[]): GuardianInsight[] {
   const insights: GuardianInsight[] = [
     {
       id: "communication-updated",
@@ -197,6 +218,16 @@ function buildInsights(features: IdentityFeatures, version: string | undefined, 
       detail: `${features.domain_terms.slice(0, 4).join(", ")} ${features.domain_terms.length > 4 ? "and more" : ""} were observed in the latest text evidence.`,
       origin: "derived",
       updatedAt,
+    });
+  }
+
+  if (identityFacts.length) {
+    insights.unshift({
+      id: "identity-facts-refreshed",
+      title: "Structured Identity Facts refreshed",
+      detail: `${identityFacts.length} direct fact${identityFacts.length === 1 ? " is" : "s are"} active in the current Identity Genome.`,
+      origin: "extracted",
+      updatedAt: identityFacts[0]?.provenance.timestamp,
     });
   }
 
@@ -225,7 +256,7 @@ function buildTimeline(payload: IntelligenceApiPayload, evidenceSources: string[
   return events.sort((left, right) => (right.timestamp ?? "").localeCompare(left.timestamp ?? ""));
 }
 
-function buildKnowledgeGraph(knowledgeObjects: KnowledgeObject[], evidenceSources: string[]) {
+function buildKnowledgeGraph(knowledgeObjects: KnowledgeObject[], identityFacts: IdentityKnowledgeObject[], evidenceSources: string[]) {
   const nodes: KnowledgeGraphNode[] = [{ id: "genome", label: "Identity Genome", kind: "genome", origin: "derived" }];
   const edges: KnowledgeGraphEdge[] = [];
 
@@ -235,7 +266,7 @@ function buildKnowledgeGraph(knowledgeObjects: KnowledgeObject[], evidenceSource
     edges.push({ from: "genome", to: id });
   });
 
-  const categories = Array.from(new Set(knowledgeObjects.map((knowledge) => knowledge.category)));
+  const categories = Array.from(new Set([...knowledgeObjects.map((knowledge) => knowledge.category), ...identityFacts.map((fact) => fact.category)]));
   categories.forEach((category) => {
     const id = `knowledge-${category}`;
     nodes.push({ id, label: titleCase(category), kind: "knowledge", origin: "extracted" });
@@ -243,6 +274,19 @@ function buildKnowledgeGraph(knowledgeObjects: KnowledgeObject[], evidenceSource
   });
 
   return { nodes, edges };
+}
+
+function toKnowledgeObject(fact: IdentityKnowledgeObject): KnowledgeObject {
+  return {
+    id: fact.id,
+    title: fact.title,
+    value: fact.value,
+    description: `${fact.description} Evidence: “${fact.provenance.evidence}” · ${fact.provenance.version}.`,
+    category: "identity-facts",
+    origin: "extracted",
+    evidenceSources: [fact.provenance.source],
+    updatedAt: fact.provenance.timestamp,
+  };
 }
 
 function slugify(value: string): string {

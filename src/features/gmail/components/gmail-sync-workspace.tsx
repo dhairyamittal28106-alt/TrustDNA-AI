@@ -10,6 +10,8 @@ import { buildGenomeSnapshot } from "@/features/identity-intelligence/adapter";
 import { addSessionSource, browserGenomeStore } from "@/features/identity-intelligence/session";
 import type { SourceRecord } from "@/features/identity-intelligence/types";
 import { GenomeEvolutionService } from "@/features/identity-evolution/genome-evolution-service";
+import { knowledgeRepository } from "@/features/identity-knowledge/knowledge-repository";
+import { GuardianEventBus } from "@/features/guardian/guardian-event-bus";
 import { syncGmail, GmailSyncApiError } from "@/features/gmail/api";
 import { GmailConnector, GmailConnectorError } from "@/features/gmail/gmail-connector";
 import { gmailConnectionStore } from "@/features/gmail/session";
@@ -18,6 +20,7 @@ import { useGmailConnection } from "@/features/gmail/use-gmail-connection";
 
 const gmailConnector = new GmailConnector();
 const evolutionService = new GenomeEvolutionService();
+const guardianEvents = new GuardianEventBus();
 const subscribeToAvailability = () => () => undefined;
 
 export function GmailSyncWorkspace() {
@@ -72,8 +75,9 @@ export function GmailSyncWorkspace() {
       ? addSessionSource(previous, source)
       : { genomeId: result.genome.id, ownerId: result.genome.owner_id, sources: [source] };
     browserGenomeStore.save(userId, session);
-    const snapshot = await buildGenomeSnapshot(result, session.sources);
+    const snapshot = await buildGenomeSnapshot(result, session.sources, knowledgeRepository.load(userId));
     evolutionService.synchronize(userId, snapshot);
+    guardianEvents.publish("gmail_sync", `Analyzed ${result.summary.messagesAnalyzed} consented sent Gmail message${result.summary.messagesAnalyzed === 1 ? "" : "s"}.`);
     gmailConnectionStore.save(userId, {
       email,
       connectedAt: connection?.connectedAt ?? result.summary.syncedAt,

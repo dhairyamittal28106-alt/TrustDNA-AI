@@ -144,6 +144,10 @@ export type GenomeSnapshot = {
   timeline: GenomeTimelineEvent[];
   knowledgeGraph: { nodes: KnowledgeGraphNode[]; edges: KnowledgeGraphEdge[] };
   knowledgeObjects: KnowledgeObject[];
+  /** Active structured facts, extracted only from direct consented statements. */
+  identityFacts: import("@/features/identity-knowledge/types").IdentityKnowledgeObject[];
+  /** Active and superseded fact history for conflict-aware retrieval and timelines. */
+  knowledgeHistory: import("@/features/identity-knowledge/types").IdentityKnowledgeObject[];
   sourceCount: number;
   genomeConfidence?: number;
   fingerprint?: string;

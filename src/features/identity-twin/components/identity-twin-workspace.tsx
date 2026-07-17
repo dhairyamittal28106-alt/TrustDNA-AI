@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { buildGenomeSnapshot, emptyGenomeSnapshot } from "@/features/identity-intelligence/adapter";
 import { IntelligenceApiError, loadGenomeIntelligence } from "@/features/identity-intelligence/api";
 import { browserGenomeStore } from "@/features/identity-intelligence/session";
+import { knowledgeRepository } from "@/features/identity-knowledge/knowledge-repository";
 import type { GenomeSnapshot } from "@/features/identity-intelligence/types";
 import { TwinSynchronizationService } from "@/features/identity-evolution/twin-synchronization-service";
+import { GuardianEventBus } from "@/features/guardian/guardian-event-bus";
 import { TwinConversation } from "@/features/identity-twin/components/twin-conversation";
 import { TwinEvidencePanel } from "@/features/identity-twin/components/twin-evidence-panel";
 import { TwinReasoningPanel } from "@/features/identity-twin/components/twin-reasoning-panel";
@@ -19,10 +21,13 @@ import type { TwinConversationMessage, TwinGuardianState, TwinResponse } from "@
 
 const twinService = new IdentityTwinService();
 const twinSynchronizationService = new TwinSynchronizationService();
+const guardianEvents = new GuardianEventBus();
 const suggestedQuestions = [
-  "Summarize my communication style.",
-  "Which domain terms are present in my Genome?",
-  "What evidence would you need to assess my career direction?",
+  "Who am I?",
+  "What's my dream?",
+  "What skills do I have?",
+  "Which university do I attend?",
+  "Who is my favorite cricketer?",
   "Does this email sound like me?",
 ];
 
@@ -72,7 +77,7 @@ export function IdentityTwinWorkspace() {
 
         try {
           const payload = await loadGenomeIntelligence(session.genomeId);
-          const nextSnapshot = await buildGenomeSnapshot(payload, session.sources);
+          const nextSnapshot = await buildGenomeSnapshot(payload, session.sources, knowledgeRepository.load(userId));
           if (active) {
             setSnapshot(nextSnapshot);
             setError(null);
@@ -124,6 +129,7 @@ export function IdentityTwinWorkspace() {
     setIsProcessing(true);
     setActivePipelineStage(0);
     setGuardianState("thinking");
+    guardianEvents.publish("twin_thinking", "Retrieving structured Identity Knowledge for your question.");
     runEvidenceTrace(response, 0);
   }
 
@@ -137,6 +143,7 @@ export function IdentityTwinWorkspace() {
     setIsProcessing(true);
     setActivePipelineStage(0);
     setGuardianState("thinking");
+    guardianEvents.publish("twin_thinking", "Retrieving structured Identity Knowledge for your question.");
     runEvidenceTrace(response, 0);
   }
 
@@ -150,6 +157,7 @@ export function IdentityTwinWorkspace() {
         setMessages((current) => [...current, { id: response.id, role: "twin", content: response.answer, response }]);
         setIsProcessing(false);
         setGuardianState("answer_ready");
+        guardianEvents.publish(response.confidence === null ? "unknown_question" : "twin_answered", response.confidence === null ? "No direct knowledge object supports that question yet." : "Identity Twin completed an evidence-bound response.");
       }, reduceMotion ? 0 : 380);
       return;
     }

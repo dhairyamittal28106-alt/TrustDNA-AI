@@ -12,6 +12,7 @@ import { GenomeInsights } from "@/features/identity-intelligence/components/geno
 import { GenomeTraitSection } from "@/features/identity-intelligence/components/genome-trait-section";
 import { IdentityMap } from "@/features/identity-intelligence/components/identity-map";
 import { KnowledgeGraph } from "@/features/identity-intelligence/components/knowledge-graph";
+import { IdentityFactsPanel } from "@/features/identity-knowledge/components/identity-facts-panel";
 import { SkillRadar } from "@/features/identity-intelligence/components/skill-radar";
 import { SourceCoverage } from "@/features/identity-intelligence/components/source-coverage";
 import { SourceManager } from "@/features/identity-intelligence/components/source-manager";
@@ -22,9 +23,16 @@ import { GenomeDiffPanel } from "@/features/identity-evolution/components/genome
 import { GenomeEvolutionTimeline } from "@/features/identity-evolution/components/genome-evolution-timeline";
 import { GenomeEvolutionService } from "@/features/identity-evolution/genome-evolution-service";
 import { addSessionSource, browserGenomeStore } from "@/features/identity-intelligence/session";
+import { IdentityKnowledgeExtractor } from "@/features/identity-knowledge/identity-knowledge-extractor";
+import { KnowledgeMerger } from "@/features/identity-knowledge/knowledge-merger";
+import { knowledgeRepository } from "@/features/identity-knowledge/knowledge-repository";
+import { GuardianEventBus } from "@/features/guardian/guardian-event-bus";
 import type { GenomeSnapshot, SourceRecord } from "@/features/identity-intelligence/types";
 
 const evolutionService = new GenomeEvolutionService();
+const knowledgeExtractor = new IdentityKnowledgeExtractor();
+const knowledgeMerger = new KnowledgeMerger();
+const guardianEvents = new GuardianEventBus();
 
 export function IdentityIntelligenceWorkspace() {
   const { user } = useAuth();
@@ -58,7 +66,7 @@ export function IdentityIntelligenceWorkspace() {
 
         try {
           const payload = await loadGenomeIntelligence(session.genomeId);
-          const nextSnapshot = await buildGenomeSnapshot(payload, session.sources);
+          const nextSnapshot = await buildGenomeSnapshot(payload, session.sources, knowledgeRepository.load(userId));
           if (active) {
             setSnapshot(nextSnapshot);
             setError(null);
@@ -107,9 +115,20 @@ export function IdentityIntelligenceWorkspace() {
         ? addSessionSource(previous, source)
         : { genomeId: payload.genome.id, ownerId: payload.genome.owner_id, sources: [source] };
       browserGenomeStore.save(userId, session);
-      const nextSnapshot = await buildGenomeSnapshot(payload, session.sources);
+      const version = payload.profile?.version ?? payload.versions[payload.versions.length - 1]?.version;
+      const timestamp = payload.profile?.updated_at ?? payload.versions[payload.versions.length - 1]?.created_at ?? new Date().toISOString();
+      const extractedFacts = knowledgeExtractor.extract({
+        content: input.content,
+        sourceLabel: input.sourceLabel,
+        genomeVersion: version ?? "unversioned",
+        timestamp,
+      });
+      const mergedFacts = knowledgeMerger.merge(knowledgeRepository.load(userId), extractedFacts);
+      knowledgeRepository.save(userId, mergedFacts.objects);
+      const nextSnapshot = await buildGenomeSnapshot(payload, session.sources, mergedFacts.objects);
       setSnapshot(nextSnapshot);
       evolutionService.synchronize(userId, nextSnapshot);
+      guardianEvents.publish("evidence_added", mergedFacts.added.length ? `Learned ${mergedFacts.added.length} new direct Identity Knowledge fact${mergedFacts.added.length === 1 ? "" : "s"}.` : "Updated current Identity Genome evidence.");
     } catch (cause) {
       if (cause instanceof IntelligenceApiError && cause.status === 404) browserGenomeStore.clear(userId);
       const message = cause instanceof Error ? cause.message : "We couldn’t complete the secure analysis. Please try again.";
@@ -142,6 +161,8 @@ export function IdentityIntelligenceWorkspace() {
     <div className="mt-5"><GmailConnectionCard /></div>
 
     <div className="mt-5"><EvolutionLifecycle busy={busy} evolution={evolution} /></div>
+
+    <div className="mt-5"><IdentityFactsPanel facts={snapshot.identityFacts} history={snapshot.knowledgeHistory} /></div>
 
     <motion.div initial={{ opacity: 0, y: reduceMotion ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduceMotion ? 0 : 0.14, duration: reduceMotion ? 0 : 0.42 }} className="mt-5 grid gap-5 xl:grid-cols-2"><SourceCoverage sources={snapshot.sources} /><GenomeInsights insights={snapshot.insights} /></motion.div>
 

@@ -1,19 +1,20 @@
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, FileText, Fingerprint, KeyRound, Mail, ShieldAlert, UserRound, type LucideIcon } from "lucide-react";
-import { IdentityGenomeHologram } from "@/components/identity-genome-hologram";
 import { PlatformShell } from "@/components/platform-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { GuardianIntelligenceSummary } from "@/features/identity-intelligence/components/guardian-intelligence-summary";
+import { GuardianDashboardPanel } from "@/features/guardian/components/guardian-dashboard-panel";
 import { IdentityIntelligenceWorkspace } from "@/features/identity-intelligence/components/identity-intelligence-workspace";
 import { IdentityTwinWorkspace } from "@/features/identity-twin/components/identity-twin-workspace";
 import { GmailConnectionCard } from "@/features/gmail/components/gmail-connection-card";
 import { GmailSyncWorkspace } from "@/features/gmail/components/gmail-sync-workspace";
+import { LiveInvestigationWorkspace } from "@/features/live-investigation/components/live-investigation-workspace";
 
-export const platformSections = ["dashboard", "genome", "gmail", "twin", "investigations", "cases", "certificates", "reports", "profile", "settings"] as const;
+export const platformSections = ["dashboard", "genome", "gmail", "twin", "live-investigation", "investigations", "cases", "certificates", "reports", "profile", "settings"] as const;
 export type PlatformSection = typeof platformSections[number];
 
-const sectionCopy: Record<Exclude<PlatformSection, "dashboard" | "genome" | "gmail" | "twin" | "settings">, { eyebrow: string; title: string; body: string; icon: LucideIcon; action: string; actionHref: string }> = {
+const sectionCopy: Record<Exclude<PlatformSection, "dashboard" | "genome" | "gmail" | "twin" | "live-investigation" | "settings">, { eyebrow: string; title: string; body: string; icon: LucideIcon; action: string; actionHref: string }> = {
   investigations: { eyebrow: "INVESTIGATIONS", title: "Open a new evidence-backed investigation.", body: "Bring a suspicious artifact to TrustDNA and let specialized investigators turn signals into an explainable decision.", icon: ShieldAlert, action: "Start an investigation", actionHref: "/demo" },
   cases: { eyebrow: "CASE FILES", title: "Your resolved cases belong in one place.", body: "Review the full evidence trail, final verdict, and recommended actions for every investigation.", icon: FileText, action: "Explore a case file", actionHref: "/demo" },
   certificates: { eyebrow: "CERTIFICATES", title: "Portable trust credentials, backed by evidence.", body: "TrustDNA Certificates make an Identity Genome’s trust posture clear, shareable, and verifiable.", icon: BadgeCheck, action: "View certificate experience", actionHref: "/demo" },
@@ -26,6 +27,7 @@ export function PlatformWorkspace({ section }: { section: PlatformSection }) {
   if (section === "genome") return <GenomeWorkspace />;
   if (section === "gmail") return <GmailWorkspace />;
   if (section === "twin") return <TwinWorkspace />;
+  if (section === "live-investigation") return <LiveInvestigation />;
   if (section === "settings") return <SettingsWorkspace />;
   return <GenericWorkspace content={sectionCopy[section]} section={section} />;
 }
@@ -43,7 +45,7 @@ function Dashboard() {
           <Button asChild className="h-11 rounded-xl bg-[#8b78f6] text-white hover:bg-[#9c8aff]"><Link href="/genome">Open Intelligence Map <ArrowRight className="size-4" /></Link></Button>
         </div>
         <div className="mt-8 grid gap-5 xl:grid-cols-[1.05fr_.95fr]">
-          <Card className="glass overflow-hidden border-white/[.1]"><CardContent className="grid gap-5 p-5 sm:grid-cols-[.86fr_1.14fr] sm:p-6"><IdentityGenomeHologram phase="idle" identityLabel="Your Identity Genome" status="Ready for evidence" currentState="Guardian monitoring the identity intelligence boundary" /><div className="flex flex-col justify-between"><div><p className="font-mono text-[10px] tracking-[.16em] text-slate-500">GUARDIAN STATUS</p><div className="mt-3 flex items-center gap-2 text-sm text-slate-200"><span className="size-2 rounded-full bg-sky-300 shadow-[0_0_12px_#7dd3fc]" />Guardian active</div><p className="mt-4 text-sm leading-6 text-slate-400">Build your Identity Genome from consented sources, then let Sentinel compare future artifacts against an evidence-backed communication baseline.</p></div><Link href="/genome" className="mt-6 inline-flex items-center gap-1.5 text-xs font-medium text-[#b9afff] transition hover:text-white">Build Identity Intelligence <ArrowRight className="size-3.5" /></Link></div></CardContent></Card>
+          <GuardianDashboardPanel />
           <GuardianIntelligenceSummary />
         </div>
         <div className="mt-5 grid gap-5 lg:grid-cols-3">
@@ -52,7 +54,7 @@ function Dashboard() {
           <DashboardPanel icon={FileText} eyebrow="RECENT RECORDS" title="Evidence in one place" body="Your investigations, certificates, and reports stay connected to the facts." href="/demo" action="Try Judge Demo" />
         </div>
         <div className="mt-5 grid gap-5 md:grid-cols-2">
-          <Card className="glass border-white/[.1]"><CardContent className="p-6"><p className="font-mono text-[10px] tracking-[.16em] text-slate-500">QUICK ACTIONS</p><div className="mt-5 grid gap-3 sm:grid-cols-2"><QuickAction icon={Mail} title="Gmail Source" body="Connect consented sent email" href="/gmail" /><QuickAction icon={ShieldAlert} title="New Investigation" body="Open an evidence-led case" href="/investigations" /><QuickAction icon={Fingerprint} title="Identity Genome" body="Shape your trust layer" href="/genome" /><QuickAction icon={FileText} title="Evidence Reports" body="Review your evidence" href="/reports" /></div></CardContent></Card>
+          <Card className="glass border-white/[.1]"><CardContent className="p-6"><p className="font-mono text-[10px] tracking-[.16em] text-slate-500">QUICK ACTIONS</p><div className="mt-5 grid gap-3 sm:grid-cols-2"><QuickAction icon={Mail} title="Gmail Source" body="Connect consented sent email" href="/gmail" /><QuickAction icon={ShieldAlert} title="Live Investigation" body="Trace real evidence to a case" href="/live-investigation" /><QuickAction icon={Fingerprint} title="Identity Genome" body="Shape your trust layer" href="/genome" /><QuickAction icon={FileText} title="Evidence Reports" body="Review your evidence" href="/reports" /></div></CardContent></Card>
           <Card className="glass border-white/[.1]"><CardContent className="p-6"><p className="font-mono text-[10px] tracking-[.16em] text-slate-500">RECENT CERTIFICATES</p><div className="mt-5 flex min-h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-white/[.1] bg-black/10 text-center"><BadgeCheck aria-hidden="true" className="size-6 text-slate-600" /><p className="mt-3 text-sm font-medium text-slate-300">Your first certificate is waiting</p><p className="mt-1 max-w-xs text-xs leading-5 text-slate-500">Complete an evidence-backed investigation to create a shareable TrustDNA Certificate.</p></div></CardContent></Card>
         </div>
       </section>
@@ -66,6 +68,10 @@ function GenomeWorkspace() {
 
 function TwinWorkspace() {
   return <PlatformShell active="twin"><IdentityTwinWorkspace /></PlatformShell>;
+}
+
+function LiveInvestigation() {
+  return <PlatformShell active="live-investigation"><LiveInvestigationWorkspace /></PlatformShell>;
 }
 
 function GmailWorkspace() {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, BrainCircuit, FileText, Fingerprint, LayoutDashboard, LogOut, Mail, ShieldAlert, ShieldCheck, SlidersHorizontal, UserRound, type LucideIcon } from "lucide-react";
+import { BadgeCheck, BrainCircuit, FileText, Fingerprint, LayoutDashboard, LogOut, Mail, Radar, ShieldAlert, ShieldCheck, SlidersHorizontal, UserRound, type LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { useAuth } from "@/components/auth-provider";
 
@@ -11,6 +11,7 @@ const navigation = [
   { href: "/genome", label: "Identity Genome", icon: Fingerprint },
   { href: "/gmail", label: "Gmail Source", icon: Mail },
   { href: "/twin", label: "Identity Twin", icon: BrainCircuit },
+  { href: "/live-investigation", label: "Live Investigation", icon: Radar },
   { href: "/investigations", label: "Investigations", icon: ShieldAlert },
   { href: "/cases", label: "Case Files", icon: FileText },
   { href: "/certificates", label: "Certificates", icon: BadgeCheck },

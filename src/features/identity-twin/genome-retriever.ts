@@ -2,6 +2,7 @@ import type { GenomeSection, GenomeSnapshot } from "@/features/identity-intellig
 import type { TwinIntent, TwinRetrievedGenome } from "@/features/identity-twin/types";
 
 const sectionIdsForIntent: Record<TwinIntent, string[]> = {
+  identity_facts: ["identity-facts"],
   communication: ["communication", "writing", "professional"],
   observed_knowledge: ["vocabulary"],
   artifact_comparison: ["communication", "writing", "professional"],
