@@ -80,6 +80,21 @@
         "title": "ArtifactType",
         "type": "string"
       },
+      "CaseLifecycleState": {
+        "enum": [
+          "case_created",
+          "collecting_evidence",
+          "dispatching_agents",
+          "awaiting_results",
+          "aggregating",
+          "risk_analysis",
+          "generating_findings",
+          "generating_certificate",
+          "closed"
+        ],
+        "title": "CaseLifecycleState",
+        "type": "string"
+      },
       "CertificateResponse": {
         "properties": {
           "certificate_number": {
@@ -100,6 +115,11 @@
             "title": "Identity Genome Id",
             "type": "string"
           },
+          "investigation_id": {
+            "format": "uuid",
+            "title": "Investigation Id",
+            "type": "string"
+          },
           "issued_at": {
             "format": "date-time",
             "title": "Issued At",
@@ -114,11 +134,50 @@
           "id",
           "certificate_number",
           "identity_genome_id",
+          "investigation_id",
           "identity_confidence",
           "trust_rating",
           "issued_at"
         ],
         "title": "CertificateResponse",
+        "type": "object"
+      },
+      "ConfidenceBreakdown": {
+        "properties": {
+          "behavior": {
+            "title": "Behavior",
+            "type": "number"
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "number"
+          },
+          "semantic": {
+            "title": "Semantic",
+            "type": "number"
+          },
+          "timeline": {
+            "title": "Timeline",
+            "type": "number"
+          },
+          "weighted_score": {
+            "title": "Weighted Score",
+            "type": "number"
+          },
+          "writing": {
+            "title": "Writing",
+            "type": "number"
+          }
+        },
+        "required": [
+          "writing",
+          "behavior",
+          "metadata",
+          "timeline",
+          "semantic",
+          "weighted_score"
+        ],
+        "title": "ConfidenceBreakdown",
         "type": "object"
       },
       "CreateIdentityGenomeRequest": {
@@ -268,6 +327,76 @@
         "title": "Finding",
         "type": "object"
       },
+      "IdentityFeatures": {
+        "additionalProperties": false,
+        "properties": {
+          "average_response_length": {
+            "minimum": 0.0,
+            "title": "Average Response Length",
+            "type": "number"
+          },
+          "average_sentence_length": {
+            "minimum": 0.0,
+            "title": "Average Sentence Length",
+            "type": "number"
+          },
+          "domain_terms": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Domain Terms",
+            "type": "array"
+          },
+          "emoji_frequency": {
+            "minimum": 0.0,
+            "title": "Emoji Frequency",
+            "type": "number"
+          },
+          "greeting_style": {
+            "title": "Greeting Style",
+            "type": "string"
+          },
+          "preferred_language": {
+            "default": "en",
+            "title": "Preferred Language",
+            "type": "string"
+          },
+          "professional_tone": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Professional Tone",
+            "type": "number"
+          },
+          "punctuation_habits": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Punctuation Habits",
+            "type": "object"
+          },
+          "signature_style": {
+            "title": "Signature Style",
+            "type": "string"
+          },
+          "vocabulary_richness": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Vocabulary Richness",
+            "type": "number"
+          }
+        },
+        "required": [
+          "vocabulary_richness",
+          "average_sentence_length",
+          "greeting_style",
+          "signature_style",
+          "emoji_frequency",
+          "professional_tone",
+          "average_response_length"
+        ],
+        "title": "IdentityFeatures",
+        "type": "object"
+      },
       "IdentityGenomeResponse": {
         "properties": {
           "created_at": {
@@ -305,6 +434,56 @@
         "title": "IdentityGenomeResponse",
         "type": "object"
       },
+      "IdentityGenomeVersionResponse": {
+        "properties": {
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "features": {
+            "$ref": "#/components/schemas/IdentityFeatures"
+          },
+          "fingerprint": {
+            "title": "Fingerprint",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "identity_genome_id": {
+            "format": "uuid",
+            "title": "Identity Genome Id",
+            "type": "string"
+          },
+          "source_count": {
+            "title": "Source Count",
+            "type": "integer"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "identity_genome_id",
+          "version",
+          "source_count",
+          "confidence",
+          "fingerprint",
+          "features",
+          "created_at"
+        ],
+        "title": "IdentityGenomeVersionResponse",
+        "type": "object"
+      },
       "IdentityProfileResponse": {
         "properties": {
           "average_word_count": {
@@ -314,6 +493,9 @@
           "embedding_count": {
             "title": "Embedding Count",
             "type": "integer"
+          },
+          "features": {
+            "$ref": "#/components/schemas/IdentityFeatures"
           },
           "identity_genome_id": {
             "format": "uuid",
@@ -332,6 +514,17 @@
             "format": "date-time",
             "title": "Updated At",
             "type": "string"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
           }
         },
         "required": [
@@ -340,7 +533,8 @@
           "unique_token_count",
           "average_word_count",
           "embedding_count",
-          "updated_at"
+          "updated_at",
+          "features"
         ],
         "title": "IdentityProfileResponse",
         "type": "object"
@@ -381,6 +575,10 @@
             "title": "Case Number",
             "type": "string"
           },
+          "genome_version": {
+            "title": "Genome Version",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -389,6 +587,10 @@
           "identity_genome_id": {
             "format": "uuid",
             "title": "Identity Genome Id",
+            "type": "string"
+          },
+          "lifecycle_state": {
+            "title": "Lifecycle State",
             "type": "string"
           },
           "opened_at": {
@@ -409,6 +611,13 @@
           "status": {
             "$ref": "#/components/schemas/InvestigationStatus"
           },
+          "timeline": {
+            "items": {
+              "$ref": "#/components/schemas/LifecycleEvent"
+            },
+            "title": "Timeline",
+            "type": "array"
+          },
           "updated_at": {
             "format": "date-time",
             "title": "Updated At",
@@ -424,7 +633,10 @@
           "identity_genome_id",
           "artifact_type",
           "artifact_reference",
+          "genome_version",
           "status",
+          "lifecycle_state",
+          "timeline",
           "verdict",
           "risk_level",
           "opened_at",
@@ -442,6 +654,9 @@
             "title": "Agents",
             "type": "array"
           },
+          "certificate": {
+            "$ref": "#/components/schemas/CertificateResponse"
+          },
           "investigation": {
             "$ref": "#/components/schemas/InvestigationResponse"
           },
@@ -452,7 +667,8 @@
         "required": [
           "investigation",
           "agents",
-          "risk"
+          "risk",
+          "certificate"
         ],
         "title": "InvestigationRunResponse",
         "type": "object"
@@ -467,8 +683,40 @@
         "title": "InvestigationStatus",
         "type": "string"
       },
+      "LifecycleEvent": {
+        "properties": {
+          "details": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Details",
+            "type": "object"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/CaseLifecycleState"
+          }
+        },
+        "required": [
+          "state",
+          "occurred_at"
+        ],
+        "title": "LifecycleEvent",
+        "type": "object"
+      },
       "RiskAssessment": {
         "properties": {
+          "breakdown": {
+            "$ref": "#/components/schemas/ConfidenceBreakdown"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
           "rationale_codes": {
             "items": {
               "type": "string"
@@ -486,7 +734,9 @@
         "required": [
           "risk_level",
           "verdict",
-          "rationale_codes"
+          "rationale_codes",
+          "confidence",
+          "breakdown"
         ],
         "title": "RiskAssessment",
         "type": "object"
@@ -950,6 +1200,113 @@
           }
         },
         "summary": "Ingest Text Sample",
+        "tags": [
+          "Identity Genome"
+        ]
+      }
+    },
+    "/api/v1/identity-genomes/{genome_id}/versions": {
+      "get": {
+        "operationId": "list_identity_genome_versions_api_v1_identity_genomes__genome_id__versions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "genome_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Genome Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/IdentityGenomeVersionResponse"
+                  },
+                  "title": "Response List Identity Genome Versions Api V1 Identity Genomes  Genome Id  Versions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Resource Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Identity Genome Versions",
         "tags": [
           "Identity Genome"
         ]
