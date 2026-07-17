@@ -57,6 +57,22 @@ async def test_plain_text_sample_builds_identity_profile(client: AsyncClient) ->
     versions = await client.get(f"/api/v1/identity-genomes/{genome_id}/versions")
     assert versions.status_code == 200
     assert versions.json()[0]["version"] == "v1"
+    assert versions.json()[0]["source_label"] == "bio"
+    assert versions.json()[0]["guardian_observation"]
+
+    second_response = await client.post(
+        f"/api/v1/identity-genomes/{genome_id}/samples/text",
+        json={
+            "content": "I build practical backend systems with clear product documentation.",
+            "source_label": "portfolio",
+        },
+    )
+    assert second_response.status_code == 201
+    versions = await client.get(f"/api/v1/identity-genomes/{genome_id}/versions")
+    assert versions.json()[1]["version"] == "v2"
+    assert versions.json()[1]["source_label"] == "portfolio"
+    assert versions.json()[1]["confidence_delta"] == 0.1
+    assert versions.json()[1]["guardian_observation"]
 
 
 async def test_text_investigation_returns_deterministic_cipher_verdict(client: AsyncClient) -> None:

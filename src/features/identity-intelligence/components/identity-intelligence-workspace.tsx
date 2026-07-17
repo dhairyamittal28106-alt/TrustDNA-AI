@@ -9,15 +9,21 @@ import { useAuth } from "@/components/auth-provider";
 import { buildGenomeSnapshot, emptyGenomeSnapshot } from "@/features/identity-intelligence/adapter";
 import { ingestTextIntelligence, IntelligenceApiError, loadGenomeIntelligence } from "@/features/identity-intelligence/api";
 import { GenomeInsights } from "@/features/identity-intelligence/components/genome-insights";
-import { GenomeTimeline } from "@/features/identity-intelligence/components/genome-timeline";
 import { GenomeTraitSection } from "@/features/identity-intelligence/components/genome-trait-section";
 import { IdentityMap } from "@/features/identity-intelligence/components/identity-map";
 import { KnowledgeGraph } from "@/features/identity-intelligence/components/knowledge-graph";
 import { SkillRadar } from "@/features/identity-intelligence/components/skill-radar";
 import { SourceCoverage } from "@/features/identity-intelligence/components/source-coverage";
 import { SourceManager } from "@/features/identity-intelligence/components/source-manager";
+import { EvolutionLifecycle } from "@/features/identity-evolution/components/evolution-lifecycle";
+import { EvolutionRecommendations } from "@/features/identity-evolution/components/evolution-recommendations";
+import { GenomeDiffPanel } from "@/features/identity-evolution/components/genome-diff-panel";
+import { GenomeEvolutionTimeline } from "@/features/identity-evolution/components/genome-evolution-timeline";
+import { GenomeEvolutionService } from "@/features/identity-evolution/genome-evolution-service";
 import { addSessionSource, browserGenomeStore } from "@/features/identity-intelligence/session";
 import type { GenomeSnapshot, SourceRecord } from "@/features/identity-intelligence/types";
+
+const evolutionService = new GenomeEvolutionService();
 
 export function IdentityIntelligenceWorkspace() {
   const { user } = useAuth();
@@ -94,6 +100,7 @@ export function IdentityIntelligenceWorkspace() {
         status: "ingested",
         origin: "extracted",
         addedAt: payload.profile?.updated_at,
+        genomeVersion: payload.profile?.version ?? payload.versions[payload.versions.length - 1]?.version,
       };
       const session = previous?.genomeId === payload.genome.id
         ? addSessionSource(previous, source)
@@ -101,6 +108,7 @@ export function IdentityIntelligenceWorkspace() {
       browserGenomeStore.save(userId, session);
       const nextSnapshot = await buildGenomeSnapshot(payload, session.sources);
       setSnapshot(nextSnapshot);
+      evolutionService.synchronize(userId, nextSnapshot);
     } catch (cause) {
       if (cause instanceof IntelligenceApiError && cause.status === 404) browserGenomeStore.clear(userId);
       const message = cause instanceof Error ? cause.message : "We couldn’t complete the secure analysis. Please try again.";
@@ -118,6 +126,7 @@ export function IdentityIntelligenceWorkspace() {
   if (loading) return <GenomeWorkspaceSkeleton />;
 
   const heading = snapshot.hasExtractedKnowledge ? "Your living Identity Genome." : "Build the evidence model of you.";
+  const evolution = evolutionService.evolve(snapshot);
   const subheading = snapshot.hasExtractedKnowledge
     ? "TrustDNA is showing only the communication evidence it can explain and trace."
     : "Start with a consented text source. TrustDNA will build an explainable foundation—without inventing facts about you.";
@@ -126,15 +135,19 @@ export function IdentityIntelligenceWorkspace() {
 
     {error && <div role="status" className="mt-6 flex items-start gap-3 rounded-2xl border border-amber-200/15 bg-amber-200/[.06] p-4 text-sm text-amber-50"><CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-amber-200" /><div><p className="font-medium">Identity intelligence needs your attention</p><p className="mt-1 text-xs leading-5 text-amber-100/75">{error}</p></div></div>}
 
-    <motion.div initial={{ opacity: 0, y: reduceMotion ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduceMotion ? 0 : 0.08, duration: reduceMotion ? 0 : 0.42 }} className="mt-8 grid gap-5 xl:grid-cols-[.78fr_1.22fr]"><IdentityGenomeHologram phase={snapshot.hasExtractedKnowledge ? "sentinel" : "genome_creation"} identityLabel={user?.displayName ?? "Your Identity Genome"} trustRating={snapshot.hasExtractedKnowledge ? "Evidence-led" : "Pending"} genomeVersion={snapshot.latestVersion?.version} confidence={snapshot.genomeConfidence} status={snapshot.hasExtractedKnowledge ? "Evidence linked" : "Awaiting source"} currentState={snapshot.hasExtractedKnowledge ? "Guardian correlating explainable text evidence" : "Guardian ready for its first supported source"} /><IdentityMap snapshot={snapshot} /></motion.div>
+    <motion.div initial={{ opacity: 0, y: reduceMotion ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduceMotion ? 0 : 0.08, duration: reduceMotion ? 0 : 0.42 }} className="mt-8 grid gap-5 xl:grid-cols-[.78fr_1.22fr]"><IdentityGenomeHologram phase={busy ? "genesis" : snapshot.hasExtractedKnowledge ? "sentinel" : "genome_creation"} identityLabel={user?.displayName ?? "Your Identity Genome"} trustRating={snapshot.hasExtractedKnowledge ? "Evidence-led" : "Pending"} genomeVersion={snapshot.latestVersion?.version} confidence={snapshot.genomeConfidence} status={busy ? "Evolving" : snapshot.hasExtractedKnowledge ? "Evidence linked" : "Awaiting source"} currentState={busy ? "Guardian is integrating new consented evidence" : evolution.latest?.guardianInsight.observation ?? "Guardian ready for its first supported source"} /><IdentityMap snapshot={snapshot} /></motion.div>
 
     <div className="mt-5"><SourceManager onIngest={ingestSource} busy={busy} /></div>
+
+    <div className="mt-5"><EvolutionLifecycle busy={busy} evolution={evolution} /></div>
 
     <motion.div initial={{ opacity: 0, y: reduceMotion ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduceMotion ? 0 : 0.14, duration: reduceMotion ? 0 : 0.42 }} className="mt-5 grid gap-5 xl:grid-cols-2"><SourceCoverage sources={snapshot.sources} /><GenomeInsights insights={snapshot.insights} /></motion.div>
 
     <motion.div initial={{ opacity: 0, y: reduceMotion ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduceMotion ? 0 : 0.2, duration: reduceMotion ? 0 : 0.42 }} className="mt-5 grid gap-5 xl:grid-cols-[1.1fr_.9fr]"><KnowledgeGraph graph={snapshot.knowledgeGraph} hasExtractedKnowledge={snapshot.hasExtractedKnowledge} /><SkillRadar features={snapshot.features} /></motion.div>
 
-    <div className="mt-5"><GenomeTimeline events={snapshot.timeline} /></div>
+    <motion.div initial={{ opacity: 0, y: reduceMotion ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduceMotion ? 0 : 0.26, duration: reduceMotion ? 0 : 0.42 }} className="mt-5 grid items-start gap-5 xl:grid-cols-[1.15fr_.85fr]"><GenomeEvolutionTimeline evolution={evolution} /><GenomeDiffPanel key={evolution.latest?.version.id ?? "empty"} evolution={evolution} /></motion.div>
+
+    <div className="mt-5"><EvolutionRecommendations recommendations={evolution.recommendations} /></div>
 
     <section aria-labelledby="genome-sections-heading" className="mt-8"><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="font-mono text-[10px] tracking-[.16em] text-[#b6acff]">EXPLAINABLE KNOWLEDGE</p><h2 id="genome-sections-heading" className="mt-2 text-2xl font-medium text-white">Genome Sections</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Each section shows its confidence, evidence sources, and last update. Missing evidence remains visible as missing—not inferred.</p></div><div className="flex items-center gap-2 rounded-xl border border-white/[.08] bg-white/[.025] px-3 py-2 text-xs text-slate-400"><ShieldCheck aria-hidden="true" className="size-3.5 text-cyan-200" />Evidence over assumptions</div></div><div className="mt-5 grid gap-4">{snapshot.sections.map((section, index) => <GenomeTraitSection key={section.id} section={section} defaultOpen={index < 3} />)}</div></section>
 

@@ -36,6 +36,7 @@ export async function buildGenomeSnapshot(payload: IntelligenceApiPayload | unde
       ...emptyGenomeSnapshot(sources),
       genome: payload.genome,
       latestVersion,
+      versions: payload.versions,
       profile: payload.profile,
       sourceCount,
       genomeConfidence: confidence,
@@ -52,6 +53,7 @@ export async function buildGenomeSnapshot(payload: IntelligenceApiPayload | unde
   return {
     genome: payload.genome,
     latestVersion,
+    versions: payload.versions,
     profile: payload.profile,
     features,
     sources,
@@ -71,6 +73,7 @@ export function emptyGenomeSnapshot(sources: SourceRecord[] = []): GenomeSnapsho
   const pendingSections = buildPendingSections();
   return {
     sources,
+    versions: [],
     sections: [
       {
         id: "communication",

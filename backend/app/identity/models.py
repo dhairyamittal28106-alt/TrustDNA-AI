@@ -22,8 +22,12 @@ class IdentityGenomeVersion(BaseModel):
     id: UUID
     identity_genome_id: UUID
     version: str
+    source_label: str = Field(min_length=1, max_length=120)
     source_count: int = Field(ge=0)
     confidence: float = Field(ge=0, le=1)
+    confidence_delta: float | None = Field(default=None, ge=-1, le=1)
+    knowledge_added: list[str] = Field(default_factory=list)
+    guardian_observation: str = Field(min_length=1, max_length=500)
     fingerprint: str
     features: IdentityFeatures
     created_at: datetime

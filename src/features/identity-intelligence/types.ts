@@ -20,6 +20,8 @@ export type SourceRecord = {
   status: SourceRecordStatus;
   origin: KnowledgeOrigin;
   addedAt?: string;
+  /** Version created by this browser-session source. Historical sources may not have one. */
+  genomeVersion?: string;
 };
 
 export type IdentityFeatures = {
@@ -58,8 +60,12 @@ export type IdentityGenomeVersionResponse = {
   id: string;
   identity_genome_id: string;
   version: string;
+  source_label: string;
   source_count: number;
   confidence: number;
+  confidence_delta: number | null;
+  knowledge_added: string[];
+  guardian_observation: string;
   fingerprint: string;
   features: IdentityFeatures;
   created_at: string;
@@ -129,6 +135,7 @@ export type KnowledgeGraphEdge = {
 export type GenomeSnapshot = {
   genome?: IdentityGenomeResponse;
   latestVersion?: IdentityGenomeVersionResponse;
+  versions: IdentityGenomeVersionResponse[];
   profile?: IdentityProfileResponse;
   features?: IdentityFeatures;
   sources: SourceRecord[];

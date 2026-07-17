@@ -61,7 +61,7 @@ async def ingest_text_sample(
     profile = await ingestion.ingest_text(
         genome.owner_id, genome.id, request.content, request.source_label
     )
-    version = await versions.record(genome.id, profile)
+    version = await versions.record(genome.id, profile, request.source_label)
     response = IdentityProfileResponse.from_profile(profile)
     return response.model_copy(update={"version": version.version})
 
