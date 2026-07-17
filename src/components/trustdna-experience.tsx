@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, Cpu, ShieldCheck } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CaseFile } from "@/components/case-file";
 import { EvidenceReport, EvidenceReportSkeleton } from "@/components/evidence-report";
@@ -75,13 +75,6 @@ export function TrustDNAExperience() {
         </AnimatePresence>
 
         {result && <motion.div id="case-file" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}><CaseFile result={result} scenario={selected} onBackToJudgeMode={goToJudgeMode} onRunNewInvestigation={startInvestigation} /><TrustCertificate result={result} onStartNewInvestigation={startInvestigation} onViewCaseFile={() => document.getElementById("case-file")?.scrollIntoView({ behavior: "smooth", block: "start" })} onViewEvidenceReport={() => document.getElementById("evidence-report")?.scrollIntoView({ behavior: "smooth", block: "start" })} /><EvidenceReport result={result} onReturnToCaseFile={() => document.getElementById("case-file")?.scrollIntoView({ behavior: "smooth", block: "start" })} onStartNewInvestigation={startInvestigation} onViewCertificate={() => document.getElementById("certificate")?.scrollIntoView({ behavior: "smooth", block: "start" })} /></motion.div>}
-
-        <section className="mx-auto max-w-7xl px-5 pb-20 pt-12 md:px-10">
-          <div className="grid gap-5 border-t border-white/[.08] pt-12 md:grid-cols-[.8fr_1.2fr]">
-            <div><p className="text-xs font-medium tracking-[.18em] text-[#aaa0ff]">HOW TRUSTDNA WORKS</p><h2 className="mt-3 text-2xl font-semibold text-white">Identity Genome → Evidence → Trust</h2></div>
-            <div className="grid gap-4 sm:grid-cols-3">{[{ icon: ShieldCheck, label: "Identity Genome", body: "Versioned, explainable traits—not a black box." }, { icon: Cpu, label: "Forensic agents", body: "Structured evidence flows through Sentinel." }, { icon: ShieldCheck, label: "Trust credential", body: "A certificate is created from the Case File." }].map(({ icon: Icon, label, body }) => <div className="rounded-2xl border border-white/[.07] bg-white/[.025] p-5" key={label}><Icon className="size-5 text-[#ad9fff]" /><p className="mt-4 text-sm font-medium text-slate-100">{label}</p><p className="mt-2 text-xs leading-5 text-slate-500">{body}</p></div>)}</div>
-          </div>
-        </section>
       </div>
     </main>
   );
