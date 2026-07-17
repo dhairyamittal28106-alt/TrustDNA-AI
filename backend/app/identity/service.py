@@ -26,5 +26,5 @@ class IdentityGenomeService:
     async def get(self, genome_id: UUID) -> IdentityGenome:
         genome = await self._repository.get(genome_id)
         if genome is None:
-            raise NotFoundError("Identity Genome", str(genome_id))
+            raise NotFoundError("Identity Genome", str(genome_id), "IDENTITY_GENOME_NOT_FOUND")
         return genome

@@ -5,11 +5,12 @@ from fastapi import APIRouter, Depends
 from app.certificate.schemas import CertificateResponse
 from app.certificate.service import CertificateService
 from app.core.dependencies import get_certificate_service
+from app.core.openapi import ERROR_RESPONSES
 
 router = APIRouter(prefix="/certificates", tags=["Certificates"])
 
 
-@router.get("/{certificate_id}", response_model=CertificateResponse)
+@router.get("/{certificate_id}", response_model=CertificateResponse, responses=ERROR_RESPONSES)
 async def get_certificate(
     certificate_id: UUID, service: CertificateService = Depends(get_certificate_service)
 ) -> CertificateResponse:

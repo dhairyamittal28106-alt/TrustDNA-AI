@@ -16,6 +16,19 @@ class RiskEngine:
     """Pure decision boundary. Scoring policy is intentionally deferred to Phase 3."""
 
     def assess(self, results: list[AgentResult]) -> RiskAssessment:
+        codes = {finding.code for result in results for finding in result.findings}
+        if "writing_mismatch" in codes:
+            return RiskAssessment(
+                risk_level=RiskLevel.HIGH,
+                verdict=Verdict.IMPERSONATION_CONFIRMED,
+                rationale_codes=["writing_mismatch"],
+            )
+        if "writing_match" in codes:
+            return RiskAssessment(
+                risk_level=RiskLevel.LOW,
+                verdict=Verdict.AUTHENTIC,
+                rationale_codes=["writing_match"],
+            )
         return RiskAssessment(
             risk_level=RiskLevel.LOW, verdict=Verdict.INCONCLUSIVE, rationale_codes=[]
         )

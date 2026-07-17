@@ -3,7 +3,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.agents.contracts import AgentResult
 from app.domain.enums import ArtifactType, InvestigationStatus, RiskLevel, Verdict
+from app.investigation.risk import RiskAssessment
 
 
 class CreateInvestigationRequest(BaseModel):
@@ -25,3 +27,15 @@ class InvestigationResponse(BaseModel):
     risk_level: RiskLevel | None
     opened_at: datetime
     updated_at: datetime
+
+
+class RunTextInvestigationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    content: str = Field(min_length=1, max_length=500_000)
+
+
+class InvestigationRunResponse(BaseModel):
+    investigation: InvestigationResponse
+    agents: list[AgentResult]
+    risk: RiskAssessment

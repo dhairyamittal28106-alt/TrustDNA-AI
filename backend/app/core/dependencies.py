@@ -1,5 +1,6 @@
 from fastapi import Request
 
+from app.artifact.service import ArtifactIngestionService
 from app.certificate.service import CertificateService
 from app.identity.service import IdentityGenomeService
 from app.investigation.service import InvestigationService
@@ -15,3 +16,7 @@ def get_investigation_service(request: Request) -> InvestigationService:
 
 def get_certificate_service(request: Request) -> CertificateService:
     return request.app.state.certificate_service
+
+
+def get_artifact_ingestion_service(request: Request) -> ArtifactIngestionService:
+    return request.app.state.artifact_ingestion_service

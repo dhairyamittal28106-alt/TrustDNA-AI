@@ -12,5 +12,5 @@ class CertificateService:
     async def get(self, certificate_id: UUID) -> TrustDNACertificate:
         certificate = await self._repository.get(certificate_id)
         if certificate is None:
-            raise NotFoundError("Certificate", str(certificate_id))
+            raise NotFoundError("Certificate", str(certificate_id), "CERTIFICATE_NOT_FOUND")
         return certificate

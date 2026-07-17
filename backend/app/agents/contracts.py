@@ -10,10 +10,15 @@ from app.domain.enums import AgentName, ArtifactType
 class InvestigationContext(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    investigation_id: UUID
+    case_id: UUID
     identity_genome_id: UUID
+    identity_vocabulary: set[str] = Field(default_factory=set)
     artifact_type: ArtifactType
     artifact_reference: str = Field(min_length=1, max_length=500)
+    artifact_text: str = ""
+    metadata: dict[str, str | int | bool] = Field(default_factory=dict)
+    investigation_options: dict[str, bool | str] = Field(default_factory=dict)
+    requested_by: UUID | None = None
     opened_at: datetime
 
 

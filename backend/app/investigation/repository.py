@@ -9,6 +9,8 @@ class InvestigationRepository(Protocol):
 
     async def get(self, investigation_id: UUID) -> Investigation | None: ...
 
+    async def save(self, investigation: Investigation) -> Investigation: ...
+
 
 class InMemoryInvestigationRepository:
     def __init__(self) -> None:
@@ -20,3 +22,7 @@ class InMemoryInvestigationRepository:
 
     async def get(self, investigation_id: UUID) -> Investigation | None:
         return self._items.get(investigation_id)
+
+    async def save(self, investigation: Investigation) -> Investigation:
+        self._items[investigation.id] = investigation
+        return investigation

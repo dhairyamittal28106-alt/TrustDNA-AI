@@ -23,3 +23,60 @@ async def test_can_open_case_for_identity_genome(client: AsyncClient) -> None:
     assert body["status"] == "queued"
     assert body["verdict"] == "pending"
     assert body["case_number"].startswith("TDNA-")
+
+
+async def test_not_found_uses_standard_error_contract(client: AsyncClient) -> None:
+    response = await client.get(f"/api/v1/investigations/{uuid4()}")
+
+    assert response.status_code == 404
+    body = response.json()
+    assert body["code"] == "INVESTIGATION_NOT_FOUND"
+    assert body["request_id"] == response.headers["X-Request-ID"]
+    assert body["details"]["id"]
+
+
+async def test_plain_text_sample_builds_identity_profile(client: AsyncClient) -> None:
+    genome_response = await client.post(
+        "/api/v1/identity-genomes", json={"owner_id": str(uuid4()), "display_name": "Aisha Shah"}
+    )
+    genome_id = genome_response.json()["id"]
+
+    response = await client.post(
+        f"/api/v1/identity-genomes/{genome_id}/samples/text",
+        json={
+            "content": "My thoughtful product strategy is clear and practical.",
+            "source_label": "bio",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["sample_count"] == 1
+    assert response.json()["embedding_count"] == 1
+
+
+async def test_text_investigation_returns_deterministic_cipher_verdict(client: AsyncClient) -> None:
+    genome_response = await client.post(
+        "/api/v1/identity-genomes", json={"owner_id": str(uuid4()), "display_name": "Aisha Shah"}
+    )
+    genome_id = genome_response.json()["id"]
+    await client.post(
+        f"/api/v1/identity-genomes/{genome_id}/samples/text",
+        json={"content": "My thoughtful product strategy is clear and practical."},
+    )
+    case_response = await client.post(
+        "/api/v1/investigations",
+        json={
+            "identity_genome_id": genome_id,
+            "artifact_type": "plain_text",
+            "artifact_reference": "judge://sample-email",
+        },
+    )
+
+    response = await client.post(
+        f"/api/v1/investigations/{case_response.json()['id']}/run-text",
+        json={"content": "My thoughtful product strategy is clear and practical."},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["risk"]["verdict"] == "authentic"
+    assert response.json()["agents"][0]["agent"] == "cipher"

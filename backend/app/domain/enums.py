@@ -2,6 +2,7 @@ from enum import StrEnum
 
 
 class ArtifactType(StrEnum):
+    PLAIN_TEXT = "plain_text"
     EMAIL = "email"
     DOCUMENT = "document"
     RESUME = "resume"
