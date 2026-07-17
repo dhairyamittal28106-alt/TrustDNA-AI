@@ -15,6 +15,8 @@ import { judgeScenarios } from "@/features/judge/scenarios";
 import type { InvestigationResult, Scenario } from "@/features/judge/types";
 
 const wait = (duration: number) => new Promise((resolve) => setTimeout(resolve, duration));
+const INVESTIGATION_STEP_DELAY_MS = 580;
+const VERDICT_REVEAL_DELAY_MS = 450;
 
 export function TrustDNAExperience() {
   const [selected, setSelected] = useState<Scenario>(judgeScenarios[0]);
@@ -33,12 +35,12 @@ export function TrustDNAExperience() {
     await wait(80);
     document.getElementById("live-investigation")?.scrollIntoView({ behavior: "smooth", block: "center" });
     const request = runJudgeScenario(selected);
-    for (let step = 1; step < 8; step += 1) { await wait(360); setActiveStep(step); }
+    for (let step = 1; step < 8; step += 1) { await wait(INVESTIGATION_STEP_DELAY_MS); setActiveStep(step); }
     try {
       const completedResult = await request;
       setResult(completedResult);
       setActiveStep(8);
-      await wait(250);
+      await wait(VERDICT_REVEAL_DELAY_MS);
       document.getElementById("case-file")?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "The investigation could not be completed.");
