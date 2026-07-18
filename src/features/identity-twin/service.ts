@@ -21,8 +21,10 @@ export class IdentityTwinService {
   ) {}
 
   answer(question: string, snapshot: GenomeSnapshot): TwinResponse {
-    const intent = this.intentDetector.detect(question);
-    const knowledgeAnswer = intent === "identity_facts" ? this.knowledgeService.answer(question, snapshot) : null;
+    // Direct knowledge has priority over broad Twin intents. This prevents a
+    // question such as “Who am I?” from falling through to communication or
+    // behavioral evidence when a normalized Name object is available.
+    const knowledgeAnswer = this.knowledgeService.answer(question, snapshot);
     if (knowledgeAnswer) {
       return this.responseBuilder.build(question, "identity_facts", {
         intent: "identity_facts",
@@ -35,6 +37,19 @@ export class IdentityTwinService {
         genomeConfidence: snapshot.genomeConfidence,
       }, knowledgeAnswer.reasoning);
     }
+    if (this.knowledgeService.intentFor(question) !== "unknown") {
+      return this.responseBuilder.build(question, "identity_facts", {
+        intent: "identity_facts",
+        evidence: [],
+        sections: snapshot.sections.filter((section) => section.id === "identity-facts"),
+        knowledgeObjects: [],
+        timeline: snapshot.timeline,
+        sources: snapshot.sources.filter((source) => source.status === "ingested"),
+        version: snapshot.latestVersion?.version,
+        genomeConfidence: snapshot.genomeConfidence,
+      }, this.knowledgeService.unavailable(question));
+    }
+    const intent = this.intentDetector.detect(question);
     if (intent === "identity_reasoning") {
       const identityReasoning = this.identityReasoningEngine.reason(question, snapshot);
       return this.responseBuilder.build(question, intent, reasoningBundle(snapshot, identityReasoning), {

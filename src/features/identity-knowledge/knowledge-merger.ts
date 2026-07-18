@@ -45,7 +45,7 @@ export class KnowledgeMerger {
 
 /** Facts such as projects and skills are additive, not mutually exclusive profile fields. */
 function isMultiValueFact(factKey: string): boolean {
-  return ["goal", "dream", "project", "programming_language", "framework", "skill", "technology", "interest", "sport"].includes(factKey);
+  return ["goal", "dream", "project", "programming_language", "framework", "skill", "technology", "interest", "sport", "value", "motivation"].includes(factKey);
 }
 
 function sameValue(left: string, right: string): boolean {

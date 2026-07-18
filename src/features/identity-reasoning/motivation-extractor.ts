@@ -1,11 +1,11 @@
 import type { IdentityKnowledgeObject } from "@/features/identity-knowledge/types";
 import type { ExplicitProfileSignal } from "@/features/identity-reasoning/identity-dimension-builder";
 
-/** Uses directly stated dreams, goals, and career aims as motivation evidence. */
+/** Uses only explicit motivation statements; goals, dreams, and career stay separate dimensions. */
 export class MotivationExtractor {
   extract(facts: IdentityKnowledgeObject[]): ExplicitProfileSignal[] {
     return facts
-      .filter((fact) => ["dream", "goal", "career"].includes(fact.factKey))
+      .filter((fact) => fact.factKey === "motivation")
       .map((fact) => ({
         id: fact.id,
         value: fact.value,

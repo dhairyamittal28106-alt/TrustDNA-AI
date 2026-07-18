@@ -122,6 +122,20 @@ export class IdentityKnowledgeExtractor {
     ]);
     if (goal) add({ factKey: "goal", title: "Goal", category: "goals" }, goal.startsWith("to ") ? goal : `to ${goal}`);
 
+    const values = firstMatch(sentence, [
+      /^(?:my\s+)?(?:core\s+)?values?\s*(?:are|is|include|:)?\s*(.+)$/i,
+      /^i\s+(?:value|believe in|care about)\s+(.+)$/i,
+      /^what matters to me\s*(?:is|:)?\s*(.+)$/i,
+    ]);
+    if (values) splitList(values).forEach((value) => add({ factKey: "value", title: "Value", category: "values" }, value));
+
+    const motivations = firstMatch(sentence, [
+      /^(?:my\s+)?(?:biggest\s+)?motivation\s*(?:is|:)?\s*(.+)$/i,
+      /^what motivates me\s*(?:is|:)?\s*(.+)$/i,
+      /^i\s+am\s+(?:motivated|driven)\s+by\s+(.+)$/i,
+    ]);
+    if (motivations) splitList(motivations).forEach((value) => add({ factKey: "motivation", title: "Motivation", category: "motivations" }, value));
+
     const projectValues = firstMatch(sentence, [
       /^i\s+(?:have\s+)?(?:built|created|developed|made|launched)\s+(.+)$/i,
       /^(?:my\s+)?projects?\s*(?:include|are|:)?\s*(.+)$/i,

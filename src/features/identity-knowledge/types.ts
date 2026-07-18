@@ -9,7 +9,9 @@ export type IdentityKnowledgeCategory =
   | "technologies"
   | "timeline"
   | "relationships"
-  | "interests";
+  | "interests"
+  | "values"
+  | "motivations";
 
 export type KnowledgeFactStatus = "active" | "superseded";
 

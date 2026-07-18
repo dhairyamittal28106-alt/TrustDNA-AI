@@ -1,36 +1,68 @@
 import type { IdentityKnowledgeObject } from "@/features/identity-knowledge/types";
 
-const queryTerms: Array<{ pattern: RegExp; keys: string[] }> = [
-  { pattern: /\b(name|who am i|about me)\b/i, keys: ["name"] },
-  { pattern: /\b(dream|ambition)\b/i, keys: ["dream"] },
-  { pattern: /\b(goal|goals)\b/i, keys: ["goal", "dream"] },
-  { pattern: /\b(where do i (?:study|attend)|university|college)\b/i, keys: ["university"] },
-  { pattern: /\b(degree|education|school)\b/i, keys: ["degree", "school"] },
-  { pattern: /\b(favorite|favourite|cricketer|player)\b/i, keys: ["favorite_player"] },
-  { pattern: /\b(sport|sports)\b/i, keys: ["sport"] },
-  { pattern: /\b(project|projects)\b/i, keys: ["project"] },
-  { pattern: /\b(skill|skills|programming language|language)\b/i, keys: ["programming_language", "framework", "skill"] },
-  { pattern: /\b(technology|technologies|framework|tool)\b/i, keys: ["framework", "programming_language", "technology"] },
-  { pattern: /\b(role|career|job|become|work as)\b/i, keys: ["career"] },
-  { pattern: /\b(interest|interests|enjoy|like)\b/i, keys: ["interest"] },
-  { pattern: /\b(timeline|milestone|started|completed|won)\b/i, keys: ["timeline_event"] },
+export type KnowledgeRetrievalIntent =
+  | "identity"
+  | "date_of_birth"
+  | "university"
+  | "degree"
+  | "education"
+  | "motivation"
+  | "values"
+  | "goals"
+  | "dreams"
+  | "career"
+  | "projects"
+  | "technical_skills"
+  | "sports"
+  | "favorite_player"
+  | "interests"
+  | "unknown";
+
+type RetrievalDefinition = {
+  intent: Exclude<KnowledgeRetrievalIntent, "unknown">;
+  pattern: RegExp;
+  factKeys: string[];
+  includeHistory?: boolean;
+};
+
+/**
+ * Ordered, deterministic question-to-ontology mapping. A direct fact question
+ * can only retrieve its declared fact keys; it never falls back to a broad
+ * Identity Genome search.
+ */
+const retrievalPriority: RetrievalDefinition[] = [
+  { intent: "identity", pattern: /\b(?:who\s+(?:am|are)\s+i|what(?:'s| is)\s+my\s+name|my\s+name)\b/i, factKeys: ["name"] },
+  { intent: "date_of_birth", pattern: /\b(?:date\s+of\s+birth|birthday|when\s+was\s+i\s+born)\b/i, factKeys: ["date_of_birth"] },
+  { intent: "university", pattern: /\b(?:where\s+(?:do|did)\s+i\s+(?:study|attend)|university|college)\b/i, factKeys: ["university"] },
+  { intent: "degree", pattern: /\b(?:what(?:'s| is)\s+my\s+degree|degree|department|major)\b/i, factKeys: ["degree", "department"] },
+  { intent: "education", pattern: /\b(?:education|school)\b/i, factKeys: ["university", "degree", "department", "school"] },
+  { intent: "motivation", pattern: /\b(?:what\s+motivates?\s+me|motivation|motivates?|drives?\s+me)\b/i, factKeys: ["motivation"] },
+  { intent: "values", pattern: /\b(?:what\s+are\s+my\s+values|my\s+values|values?|priorities)\b/i, factKeys: ["value"] },
+  { intent: "dreams", pattern: /\b(?:dream|ambition|aspiration)\b/i, factKeys: ["dream"] },
+  { intent: "goals", pattern: /\b(?:goal|goals)\b/i, factKeys: ["goal"] },
+  { intent: "career", pattern: /\b(?:role|career|job|become|work\s+as)\b/i, factKeys: ["career"] },
+  { intent: "projects", pattern: /\b(?:what\s+(?:projects?|have)\s+(?:i\s+)?(?:built|created|developed)|projects?|portfolio)\b/i, factKeys: ["project"] },
+  { intent: "technical_skills", pattern: /\b(?:technologies|technology|technical\s+skills?|skills?|programming\s+languages?|frameworks?|tech\s+stack|what\s+do\s+i\s+know)\b/i, factKeys: ["programming_language", "framework", "skill", "technology"] },
+  { intent: "favorite_player", pattern: /\b(?:favorite|favourite|cricketer|player)\b/i, factKeys: ["favorite_player"], includeHistory: true },
+  { intent: "sports", pattern: /\b(?:sport|sports)\b/i, factKeys: ["sport"] },
+  { intent: "interests", pattern: /\b(?:interest|interests|enjoy|like)\b/i, factKeys: ["interest"] },
 ];
+
+export function classifyKnowledgeRetrievalIntent(question: string): KnowledgeRetrievalIntent {
+  return retrievalPriority.find((definition) => definition.pattern.test(question))?.intent ?? "unknown";
+}
 
 export class KnowledgeRetriever {
   retrieve(question: string, objects: IdentityKnowledgeObject[]): IdentityKnowledgeObject[] {
-    const active = objects.filter((item) => item.status === "active");
-    if (/\bwho am i\b/i.test(question)) return active.filter((item) => item.factKey === "name");
-    const matched = queryTerms.find((entry) => entry.pattern.test(question));
-    if (!matched) return [];
+    const definition = retrievalPriority.find((entry) => entry.pattern.test(question));
+    if (!definition) return [];
 
-    const current = active.filter((item) => matched.keys.includes(item.factKey));
-    if (matched.keys.includes("favorite_player")) {
-      const history = objects
-        .filter((item) => item.factKey === "favorite_player" && item.status === "superseded")
-        .sort((left, right) => right.provenance.timestamp.localeCompare(left.provenance.timestamp));
-      return [...current, ...history];
-    }
-    if (/\b(?:about me|summarize|summary|identity)\b/i.test(question)) return active.filter((item) => item.factKey === "name");
-    return current;
+    const active = objects.filter((item) => item.status === "active" && definition.factKeys.includes(item.factKey));
+    if (!definition.includeHistory) return active;
+
+    const history = objects
+      .filter((item) => item.status === "superseded" && definition.factKeys.includes(item.factKey))
+      .sort((left, right) => right.provenance.timestamp.localeCompare(left.provenance.timestamp));
+    return [...active, ...history];
   }
 }
