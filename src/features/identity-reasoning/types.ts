@@ -16,14 +16,30 @@ export type IdentityReasoningIntent =
   | "general_decision";
 
 export type IdentityDimensionId =
+  | "identity"
   | "goals"
+  | "dreams"
   | "career"
   | "education"
   | "projects"
   | "skills"
+  | "frameworks"
   | "interests"
   | "sports"
-  | "communication";
+  | "values"
+  | "motivations"
+  | "learning_style"
+  | "communication"
+  | "decision_style"
+  | "leadership"
+  | "risk_tolerance"
+  | "ownership_preference"
+  | "collaboration_style"
+  | "problem_solving_style"
+  | "strengths"
+  | "weaknesses"
+  | "professional_preferences"
+  | "behavior_patterns";
 
 export type ReasoningEvidence = {
   id: string;
@@ -36,6 +52,7 @@ export type ReasoningEvidence = {
   timestamp: string;
   confidence: number;
   weight: number;
+  evidenceIds: string[];
   fact?: IdentityKnowledgeObject;
 };
 
@@ -56,7 +73,30 @@ export type BehaviorPattern = {
   label: string;
   detail: string;
   confidence: number;
+  source: string;
+  evidence: string;
+  version: string;
+  timestamp: string;
   evidenceIds: string[];
+};
+
+export type IdentityProfile = {
+  genomeVersion?: string;
+  sourceCount: number;
+  sourceLabels: string[];
+  dimensions: IdentityDimension[];
+  behaviorSignals: BehaviorPattern[];
+};
+
+export type ReasoningContext = {
+  question: string;
+  intent: IdentityReasoningIntent;
+  profile: IdentityProfile;
+  dimensions: IdentityDimension[];
+  behaviorSignals: BehaviorPattern[];
+  values: IdentityDimension[];
+  goals: IdentityDimension[];
+  motivations: IdentityDimension[];
 };
 
 export type ReasoningGraphNode = {
@@ -87,6 +127,7 @@ export type IdentityDecision = {
 export type IdentityReasoningResult = {
   intent: IdentityReasoningIntent;
   genomeVersion?: string;
+  profile: IdentityProfile;
   dimensions: IdentityDimension[];
   behaviorPatterns: BehaviorPattern[];
   evidence: ReasoningEvidence[];

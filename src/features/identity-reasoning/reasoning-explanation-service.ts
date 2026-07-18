@@ -1,4 +1,4 @@
-import type { IdentityDecision, IdentityReasoningIntent, ReasoningEvidence } from "@/features/identity-reasoning/types";
+import type { IdentityDecision, IdentityProfile, IdentityReasoningIntent, ReasoningEvidence } from "@/features/identity-reasoning/types";
 
 const intentLabels: Record<IdentityReasoningIntent, string> = {
   identity_summary: "an evidence-backed profile summary",
@@ -18,12 +18,13 @@ const intentLabels: Record<IdentityReasoningIntent, string> = {
 
 /** Delivers an auditable summary of the structured pipeline without exposing hidden chain-of-thought. */
 export class ReasoningExplanationService {
-  summarize(intent: IdentityReasoningIntent, evidence: ReasoningEvidence[], decision: IdentityDecision, version?: string): string[] {
+  summarize(intent: IdentityReasoningIntent, evidence: ReasoningEvidence[], decision: IdentityDecision, profile: IdentityProfile): string[] {
     const categories = Array.from(new Set(evidence.map((item) => item.title))).join(", ");
     return [
       `Mapped the question to ${intentLabels[intent]}.`,
+      `Synthesized an Identity Profile with ${profile.dimensions.length} evidence-backed dimensions from ${profile.sourceCount} source${profile.sourceCount === 1 ? "" : "s"}.`,
       evidence.length ? `Used ${evidence.length} directly stored or measured evidence dimension${evidence.length === 1 ? "" : "s"}: ${categories}.` : "No directly relevant evidence dimension was available.",
-      version ? `Kept the conclusion inside Identity Genome ${version}.` : "No versioned Genome was available, so the response remains evidence-limited.",
+      profile.genomeVersion ? `Kept the conclusion inside Identity Genome ${profile.genomeVersion}.` : "No versioned Genome was available, so the response remains evidence-limited.",
       "Excluded unrecorded personality, risk, financial, and relationship claims.",
       `Decision boundary: ${decision.label}.`,
     ];

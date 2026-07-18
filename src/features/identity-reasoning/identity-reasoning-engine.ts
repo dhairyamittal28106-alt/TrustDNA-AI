@@ -1,8 +1,8 @@
-import { BehaviorPatternEngine } from "@/features/identity-reasoning/behavior-pattern-engine";
 import { EvidenceWeightEngine } from "@/features/identity-reasoning/evidence-weight-engine";
 import { IdentityConfidenceEngine } from "@/features/identity-reasoning/identity-confidence-engine";
 import { IdentityDecisionEngine } from "@/features/identity-reasoning/identity-decision-engine";
 import { IdentityProfileAggregator } from "@/features/identity-reasoning/identity-profile-aggregator";
+import { ReasoningContextBuilder } from "@/features/identity-reasoning/reasoning-context-builder";
 import { ReasoningExplanationService } from "@/features/identity-reasoning/reasoning-explanation-service";
 import { ReasoningGraphBuilder } from "@/features/identity-reasoning/reasoning-graph-builder";
 import { RecommendationEngine } from "@/features/identity-reasoning/recommendation-engine";
@@ -13,8 +13,8 @@ import type { GenomeSnapshot } from "@/features/identity-intelligence/types";
 export class IdentityReasoningEngine {
   constructor(
     private readonly profileAggregator = new IdentityProfileAggregator(),
-    private readonly behaviorPatterns = new BehaviorPatternEngine(),
     private readonly evidenceWeights = new EvidenceWeightEngine(),
+    private readonly contextBuilder = new ReasoningContextBuilder(),
     private readonly decisionEngine = new IdentityDecisionEngine(),
     private readonly recommendations = new RecommendationEngine(),
     private readonly confidenceEngine = new IdentityConfidenceEngine(),
@@ -24,24 +24,25 @@ export class IdentityReasoningEngine {
 
   reason(question: string, snapshot: GenomeSnapshot): IdentityReasoningResult {
     const intent = classifyIdentityReasoningIntent(question);
-    const allDimensions = this.profileAggregator.aggregate(snapshot);
-    const patterns = this.behaviorPatterns.extract(allDimensions);
-    const evidence = this.evidenceWeights.select(intent, allDimensions, patterns);
-    const dimensions = allDimensions.filter((dimension) => evidence.some((item) => item.category === dimension.id));
-    const visiblePatterns = patterns.filter((pattern) => pattern.evidenceIds.some((id) => evidence.some((item) => item.id === id)));
-    const decision = this.recommendations.build(this.decisionEngine.decide({ intent, dimensions, evidence }));
+    const profile = this.profileAggregator.aggregate(snapshot);
+    const context = this.contextBuilder.build(question, intent, profile);
+    const evidence = this.evidenceWeights.select(context);
+    const dimensions = context.dimensions.filter((dimension) => evidence.some((item) => item.category === dimension.id));
+    const visiblePatterns = context.behaviorSignals.filter((pattern) => pattern.evidenceIds.some((id) => evidence.some((item) => item.evidenceIds.includes(id))));
+    const decision = this.recommendations.build(this.decisionEngine.decide({ ...context, dimensions, behaviorSignals: visiblePatterns, evidence }));
     const graph = this.graphBuilder.build(question, dimensions, visiblePatterns, evidence, decision);
 
     return {
       intent,
       genomeVersion: snapshot.latestVersion?.version,
+      profile,
       dimensions,
       behaviorPatterns: visiblePatterns,
       evidence,
       graph,
       decision,
       confidence: this.confidenceEngine.estimate(evidence),
-      reasoningSummary: this.explanations.summarize(intent, evidence, decision, snapshot.latestVersion?.version),
+      reasoningSummary: this.explanations.summarize(intent, evidence, decision, profile),
       limitations: this.explanations.limitations(evidence, decision),
     };
   }
@@ -55,7 +56,7 @@ export function classifyIdentityReasoningIntent(question: string): IdentityReaso
   if (/\b(weakness|weaknesses|improve)\b/.test(normalized)) return "weaknesses";
   if (/\b(entrepreneur|founder|business owner)\b/.test(normalized)) return "entrepreneurship";
   if (/\b(management|manager|manage a team|leadership)\b/.test(normalized)) return "management";
-  if (/\b(higher studies|postgraduate|master'?s|masters|graduate school|further studies)\b/.test(normalized)) return "higher_studies";
+  if (/\b(higher studies|postgraduate|master'?s|masters|mba|graduate school|further studies)\b/.test(normalized)) return "higher_studies";
   if (/\b(move abroad|relocate|relocation|another country|foreign country)\b/.test(normalized)) return "relocation";
   if (/\b(startup|start-up)\b/.test(normalized)) return "startup_fit";
   if (/\b(align|alignment)\b/.test(normalized) && /\b(goal|decision|choice|career)\b/.test(normalized)) return "goal_alignment";

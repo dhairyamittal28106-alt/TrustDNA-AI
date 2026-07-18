@@ -1,79 +1,110 @@
+import { BehaviorSignalAggregator } from "@/features/identity-reasoning/behavior-signal-aggregator";
+import { CareerProfileBuilder } from "@/features/identity-reasoning/career-profile-builder";
+import { GoalExtractor } from "@/features/identity-reasoning/goal-extractor";
+import { IdentityDimensionBuilder } from "@/features/identity-reasoning/identity-dimension-builder";
+import { MotivationExtractor } from "@/features/identity-reasoning/motivation-extractor";
+import { ValueExtractor } from "@/features/identity-reasoning/value-extractor";
 import type { GenomeSnapshot } from "@/features/identity-intelligence/types";
 import type { IdentityKnowledgeObject } from "@/features/identity-knowledge/types";
-import type { IdentityDimension, IdentityDimensionId } from "@/features/identity-reasoning/types";
+import type { BehaviorPattern, IdentityDimension, IdentityDimensionId, IdentityProfile } from "@/features/identity-reasoning/types";
 
-type DimensionDefinition = {
+type FactDimensionDefinition = {
   id: IdentityDimensionId;
   label: string;
   factKeys: string[];
 };
 
-const dimensions: DimensionDefinition[] = [
-  { id: "goals", label: "Goals & Dreams", factKeys: ["dream", "goal"] },
-  { id: "career", label: "Career Direction", factKeys: ["career"] },
+const factDimensions: FactDimensionDefinition[] = [
+  { id: "identity", label: "Identity", factKeys: ["name", "date_of_birth"] },
   { id: "education", label: "Education", factKeys: ["university", "degree", "department", "school"] },
   { id: "projects", label: "Projects", factKeys: ["project"] },
-  { id: "skills", label: "Technical Skills", factKeys: ["programming_language", "framework", "skill", "technology"] },
+  { id: "skills", label: "Technical Skills", factKeys: ["programming_language", "skill", "technology"] },
+  { id: "frameworks", label: "Frameworks", factKeys: ["framework"] },
   { id: "interests", label: "Interests", factKeys: ["interest"] },
   { id: "sports", label: "Sports", factKeys: ["sport", "favorite_player"] },
 ];
 
-/** Aggregates direct fact objects into inspectable dimensions without inferring traits. */
+/** Synthesizes an explainable profile from all available direct facts and measured text features. */
 export class IdentityProfileAggregator {
-  aggregate(snapshot: GenomeSnapshot): IdentityDimension[] {
-    const activeFacts = snapshot.knowledgeHistory.filter((fact) => fact.status === "active");
-    const structuredDimensions = dimensions
-      .map((definition) => this.toDimension(definition, activeFacts))
+  constructor(
+    private readonly dimensions = new IdentityDimensionBuilder(),
+    private readonly goals = new GoalExtractor(),
+    private readonly values = new ValueExtractor(),
+    private readonly motivations = new MotivationExtractor(),
+    private readonly career = new CareerProfileBuilder(),
+    private readonly behaviors = new BehaviorSignalAggregator(),
+  ) {}
+
+  aggregate(snapshot: GenomeSnapshot): IdentityProfile {
+    const facts = snapshot.knowledgeHistory.filter((fact) => fact.status === "active");
+    const directDimensions = factDimensions
+      .map((definition) => this.dimensions.fromFacts(definition.id, definition.label, facts.filter((fact) => definition.factKeys.includes(fact.factKey))))
       .filter((dimension): dimension is IdentityDimension => dimension !== null);
+    const profileDimensions = [
+      ...directDimensions,
+      this.dimensions.fromFacts("goals", "Goals", this.goals.goals(facts)),
+      this.dimensions.fromFacts("dreams", "Dreams", this.goals.dreams(facts)),
+      this.career.build(facts),
+      this.dimensions.fromSignals("values", "Stated Values & Priorities", this.values.extract(facts)),
+      this.dimensions.fromSignals("motivations", "Motivations", this.motivations.extract(facts)),
+      this.communicationDimension(snapshot),
+    ].filter((dimension): dimension is IdentityDimension => dimension !== null);
+    const capabilityDimensions = profileDimensions.filter((dimension) => ["projects", "skills", "frameworks", "communication"].includes(dimension.id));
+    const strengths = this.dimensions.fromDimensions(
+      "strengths",
+      "Evidence-backed capability areas",
+      capabilityDimensions,
+      capabilityDimensions.length ? capabilityDimensions.map((dimension) => dimension.label).join(" · ") : "",
+    );
+    const completeDimensions = strengths ? [...profileDimensions, strengths] : profileDimensions;
+    const behaviorSignals = this.behaviors.aggregate(facts, completeDimensions);
+    const behavioralDimensions = [
+      this.fromBehavior("behavior_patterns", "Behavior Patterns", behaviorSignals, facts),
+      this.fromBehavior("learning_style", "Learning-style evidence", behaviorSignals.filter((signal) => signal.id === "repeated-learning-priority"), facts),
+      this.fromBehavior("decision_style", "Decision-style evidence", behaviorSignals.filter((signal) => signal.id === "repeated-analytical-decision-evidence"), facts),
+      this.fromBehavior("risk_tolerance", "Risk-preference evidence", behaviorSignals.filter((signal) => signal.id === "repeated-risk-language"), facts),
+      this.fromBehavior("ownership_preference", "Ownership-preference evidence", behaviorSignals.filter((signal) => signal.id === "repeated-ownership-preference"), facts),
+    ].filter((dimension): dimension is IdentityDimension => dimension !== null);
+    const sourceLabels = Array.from(new Set(snapshot.sources.filter((source) => source.status === "ingested").map((source) => source.label)));
 
-    const communication = this.communicationDimension(snapshot);
-    return communication ? [...structuredDimensions, communication] : structuredDimensions;
-  }
-
-  private toDimension(definition: DimensionDefinition, facts: IdentityKnowledgeObject[]): IdentityDimension | null {
-    const matchingFacts = facts.filter((fact) => definition.factKeys.includes(fact.factKey));
-    if (!matchingFacts.length) return null;
-
-    const newest = [...matchingFacts].sort((left, right) => right.provenance.timestamp.localeCompare(left.provenance.timestamp))[0];
-    const confidence = average(matchingFacts.map((fact) => fact.provenance.confidence));
     return {
-      id: definition.id,
-      label: definition.label,
-      value: matchingFacts.map((fact) => fact.value).join(" · "),
-      confidence,
-      source: unique(matchingFacts.map((fact) => fact.provenance.source)).join(", "),
-      evidence: matchingFacts.map((fact) => `“${fact.provenance.evidence}”`).join(" "),
-      version: newest.provenance.version,
-      timestamp: newest.provenance.timestamp,
-      evidenceIds: matchingFacts.map((fact) => fact.id),
+      genomeVersion: snapshot.latestVersion?.version,
+      sourceCount: snapshot.sourceCount,
+      sourceLabels,
+      dimensions: [...completeDimensions, ...behavioralDimensions],
+      behaviorSignals,
     };
   }
 
   private communicationDimension(snapshot: GenomeSnapshot): IdentityDimension | null {
     const features = snapshot.features;
     if (!features || snapshot.genomeConfidence === undefined) return null;
-
-    const source = snapshot.sources.filter((item) => item.status === "ingested").map((item) => item.label).join(", ") || "Analyzed text evidence";
-    const version = snapshot.latestVersion?.version ?? "Current Genome";
-    const timestamp = snapshot.profile?.updated_at ?? snapshot.latestVersion?.created_at ?? "Unknown";
-    return {
-      id: "communication",
-      label: "Communication Measurements",
+    const sources = snapshot.sources.filter((source) => source.status === "ingested").map((source) => source.label);
+    const timestamp = snapshot.profile?.updated_at ?? snapshot.latestVersion?.created_at;
+    if (!timestamp) return null;
+    return this.dimensions.fromSignals("communication", "Communication Measurements", [{
+      id: "measured-communication",
       value: `Professional tone ${Math.round(features.professional_tone * 100)}% · average sentence length ${Math.round(features.average_sentence_length)} words`,
-      confidence: snapshot.genomeConfidence / 100,
-      source,
+      source: sources.join(", ") || "Analyzed text evidence",
       evidence: "Deterministic metrics measured from consented analyzed text.",
-      version,
+      version: snapshot.latestVersion?.version ?? "Current Genome",
       timestamp,
-      evidenceIds: ["measured-communication"],
-    };
+      confidence: snapshot.genomeConfidence / 100,
+    }]);
   }
-}
 
-function average(values: number[]): number {
-  return values.reduce((total, value) => total + value, 0) / values.length;
-}
-
-function unique(values: string[]): string[] {
-  return Array.from(new Set(values));
+  private fromBehavior(id: IdentityDimensionId, label: string, signals: BehaviorPattern[], facts: IdentityKnowledgeObject[]): IdentityDimension | null {
+    const evidenceIds = new Set(signals.flatMap((signal) => signal.evidenceIds));
+    const supportingFacts = facts.filter((fact) => evidenceIds.has(fact.id));
+    if (!supportingFacts.length) return null;
+    return this.dimensions.fromSignals(id, label, supportingFacts.map((fact) => ({
+      id: fact.id,
+      value: signals.map((signal) => signal.label).join(" · "),
+      source: fact.provenance.source,
+      evidence: fact.provenance.evidence,
+      version: fact.provenance.version,
+      timestamp: fact.provenance.timestamp,
+      confidence: fact.provenance.confidence,
+    })));
+  }
 }

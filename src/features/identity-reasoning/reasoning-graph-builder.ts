@@ -24,13 +24,13 @@ export class ReasoningGraphBuilder {
       edges.push({ from: evidenceId, to: `dimension-${item.category}`, relationship: "supports" });
     });
 
-    patterns.filter((pattern) => pattern.evidenceIds.some((id) => evidence.some((item) => item.id === id))).forEach((pattern) => {
+    patterns.filter((pattern) => pattern.evidenceIds.some((id) => evidence.some((item) => item.evidenceIds.includes(id)))).forEach((pattern) => {
       const patternId = `behavior-${pattern.id}`;
       nodes.push({ id: patternId, label: pattern.label, kind: "behavior" });
       edges.push({ from: patternId, to: decisionId, relationship: "informs" });
-      pattern.evidenceIds
-        .filter((evidenceId) => evidence.some((item) => item.id === evidenceId))
-        .forEach((evidenceId) => edges.push({ from: `evidence-${evidenceId}`, to: patternId, relationship: "supports" }));
+      evidence
+        .filter((item) => item.evidenceIds.some((evidenceId) => pattern.evidenceIds.includes(evidenceId)))
+        .forEach((item) => edges.push({ from: `evidence-${item.id}`, to: patternId, relationship: "supports" }));
     });
 
     return { nodes, edges };
