@@ -32,6 +32,7 @@ const suggestedQuestions = [
   "Would I make a good entrepreneur?",
   "What motivates me?",
   "Should I pursue higher studies?",
+  "How do I become more disciplined?",
   "Does this email sound like me?",
 ];
 
@@ -133,7 +134,7 @@ export function IdentityTwinWorkspace() {
     setIsProcessing(true);
     setActivePipelineStage(0);
     setGuardianState("thinking");
-    guardianEvents.publish("twin_thinking", "Retrieving structured Identity Knowledge for your question.");
+    guardianEvents.publish("twin_thinking", thinkingDetail(response.intent));
     runEvidenceTrace(response, 0);
   }
 
@@ -147,7 +148,7 @@ export function IdentityTwinWorkspace() {
     setIsProcessing(true);
     setActivePipelineStage(0);
     setGuardianState("thinking");
-    guardianEvents.publish("twin_thinking", "Retrieving structured Identity Knowledge for your question.");
+    guardianEvents.publish("twin_thinking", thinkingDetail(response.intent));
     runEvidenceTrace(response, 0);
   }
 
@@ -161,7 +162,8 @@ export function IdentityTwinWorkspace() {
         setMessages((current) => [...current, { id: response.id, role: "twin", content: response.answer, response }]);
         setIsProcessing(false);
         setGuardianState("answer_ready");
-        guardianEvents.publish(response.confidence === null ? "unknown_question" : "twin_answered", response.confidence === null ? "No direct knowledge object supports that question yet." : "Identity Twin completed an evidence-bound response.");
+        const withheld = response.intent === "prediction_boundary" || response.confidence === null && !response.hybridAdvice;
+        guardianEvents.publish(withheld ? "unknown_question" : "twin_answered", withheld ? "No direct knowledge object supports that question yet." : "Identity Twin completed an evidence-bound response.");
       }, reduceMotion ? 0 : 380);
       return;
     }
@@ -189,6 +191,13 @@ export function IdentityTwinWorkspace() {
     <IdentityReasoningTrace reasoning={selectedResponse?.identityReasoning} />
     {!snapshot.hasExtractedKnowledge && <div className="mt-5 flex flex-col items-center justify-between gap-4 rounded-2xl border border-[#a99bff]/15 bg-[#8d79f7]/[.06] p-5 text-center sm:flex-row sm:text-left"><div><div className="flex items-center justify-center gap-2 sm:justify-start"><Fingerprint aria-hidden="true" className="size-4 text-[#c4bcff]" /><p className="font-mono text-[10px] tracking-[.14em] text-[#c4bcff]">TWIN EVIDENCE BOUNDARY</p></div><p className="mt-2 max-w-3xl text-xs leading-5 text-slate-400">The Twin will not infer your goals, skills, relationships, or identity from a blank profile. Add a consented text source to unlock explainable communication evidence.</p></div><Button asChild variant="outline" className="shrink-0 border-white/[.12] bg-transparent text-slate-200 hover:bg-white/[.06] hover:text-white"><Link href="/genome">Add Identity Genome evidence</Link></Button></div>}
   </section>;
+}
+
+function thinkingDetail(intent: TwinResponse["intent"]): string {
+  if (intent === "hybrid_advice") return "Separating Identity Evidence from general guidance.";
+  if (intent === "prediction_boundary") return "Preserving the Identity Twin’s future-prediction boundary.";
+  if (intent === "identity_reasoning") return "Correlating current Identity Profile evidence for decision support.";
+  return "Retrieving structured Identity Knowledge for your question.";
 }
 
 function TwinGenomeVersion({ snapshot }: { snapshot: GenomeSnapshot }) {

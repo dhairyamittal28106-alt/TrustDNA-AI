@@ -1,4 +1,4 @@
-import type { TwinEvidenceBundle, TwinIntent, TwinPipelineStage, TwinResponse } from "@/features/identity-twin/types";
+import type { HybridAdvice, TwinEvidenceBundle, TwinIntent, TwinPipelineStage, TwinResponse } from "@/features/identity-twin/types";
 import type { TwinReasoning } from "@/features/identity-twin/types";
 import type { IdentityReasoningResult } from "@/features/identity-reasoning/types";
 
@@ -15,7 +15,7 @@ const pipelineLabels: Array<Pick<TwinPipelineStage, "id" | "label">> = [
 ];
 
 export class TwinResponseBuilder {
-  build(question: string, intent: TwinIntent, bundle: TwinEvidenceBundle, reasoning: TwinReasoning, identityReasoning?: IdentityReasoningResult): TwinResponse {
+  build(question: string, intent: TwinIntent, bundle: TwinEvidenceBundle, reasoning: TwinReasoning, identityReasoning?: IdentityReasoningResult, hybridAdvice?: HybridAdvice): TwinResponse {
     const evidenceCount = bundle.evidence.length;
     const pipeline = pipelineLabels.map((stage) => ({
       ...stage,
@@ -36,6 +36,7 @@ export class TwinResponseBuilder {
       limitations: reasoning.limitations,
       suggestedSources: reasoning.suggestedSources,
       identityReasoning,
+      hybridAdvice,
       pipeline,
       generatedAt: new Date().toISOString(),
     };
@@ -48,9 +49,9 @@ export class TwinResponseBuilder {
       case "genome": return version ? `Using Identity Genome ${version}.` : "No versioned Genome is available yet.";
       case "evidence": return evidenceCount ? `${evidenceCount} explainable evidence item${evidenceCount === 1 ? "" : "s"} selected.` : "No relevant evidence selected.";
       case "knowledge": return evidenceCount ? "Only source-linked knowledge objects were retained." : "No knowledge objects support this conclusion.";
-      case "reasoning": return intent === "identity_reasoning" ? "Connected selected dimensions, evidence, and deterministic behavior signals." : "No external model or ungrounded personal inference was used.";
-      case "decision": return intent === "identity_reasoning" ? "Applied deterministic rules with a recommendation, alternative view, and evidence gaps." : "No decision engine applies to this evidence scope.";
-      case "confidence": return intent === "identity_reasoning" ? "Calculated from evidence relevance, confidence, coverage, and category diversity." : "Confidence remains inside the available evidence boundary.";
+      case "reasoning": return intent === "identity_reasoning" ? "Connected selected dimensions, evidence, and deterministic behavior signals." : intent === "hybrid_advice" ? "Kept Identity Evidence separate from deterministic general guidance." : "No external model or ungrounded personal inference was used.";
+      case "decision": return intent === "identity_reasoning" ? "Applied deterministic rules with a recommendation, alternative view, and evidence gaps." : intent === "hybrid_advice" ? "Prepared an alignment checklist without making a personal prediction." : "No decision engine applies to this evidence scope.";
+      case "confidence": return intent === "identity_reasoning" ? "Calculated from evidence relevance, confidence, coverage, and category diversity." : intent === "hybrid_advice" ? "Measures the coverage of Identity Evidence, not the correctness of life advice." : "Confidence remains inside the available evidence boundary.";
       case "answer": return evidenceCount ? "Response includes evidence, confidence, and limitations." : "Response clearly marks the gap as unknown.";
     }
   }

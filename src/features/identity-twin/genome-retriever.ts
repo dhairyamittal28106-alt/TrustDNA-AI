@@ -9,6 +9,8 @@ const sectionIdsForIntent: Record<TwinIntent, string[]> = {
   evidence_requirements: [],
   identity_summary: ["communication", "writing", "vocabulary", "professional"],
   identity_reasoning: ["identity-facts", "communication", "writing", "professional"],
+  hybrid_advice: [],
+  prediction_boundary: [],
   unknown: [],
 };
 

@@ -16,6 +16,8 @@ export type TwinIntent =
   | "evidence_requirements"
   | "identity_summary"
   | "identity_reasoning"
+  | "hybrid_advice"
+  | "prediction_boundary"
   | "unknown";
 
 export type TwinGuardianState = "listening" | "thinking" | "reasoning" | "answer_ready";
@@ -79,6 +81,27 @@ export type TwinReasoning = {
   suggestedSources: string[];
 };
 
+export type HybridAdvice = {
+  topic: string;
+  identityContext: {
+    summary: string;
+    evidence: Array<{ label: string; value: string }>;
+  };
+  generalGuidance: {
+    summary: string;
+    actions: string[];
+  };
+  alignment: {
+    summary: string;
+    considerations: string[];
+  };
+  evidenceBoundary: {
+    identityEvidence: string[];
+    generalKnowledge: string;
+    unknown: string[];
+  };
+};
+
 export type TwinResponse = TwinReasoning & {
   id: string;
   question: string;
@@ -88,6 +111,8 @@ export type TwinResponse = TwinReasoning & {
   evidenceBundle: TwinEvidenceBundle;
   /** Structured, visible reasoning for open-ended decision-support questions. */
   identityReasoning?: IdentityReasoningResult;
+  /** Deterministic advice with explicit evidence and general-knowledge boundaries. */
+  hybridAdvice?: HybridAdvice;
   pipeline: TwinPipelineStage[];
   generatedAt: string;
 };
