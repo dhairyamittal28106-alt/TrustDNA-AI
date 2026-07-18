@@ -31,7 +31,9 @@ export const knowledgeRepository = {
 
   save(userId: string, objects: IdentityKnowledgeObject[]): void {
     if (typeof window === "undefined") return;
-    window.sessionStorage.setItem(storageKey(userId), JSON.stringify(objects));
+    const repaired = repairStoredKnowledge(objects);
+    if (repaired.repairs.length) console.warn("[TrustDNA][knowledge-integrity] Repaired Knowledge Objects before persistence", repaired.repairs);
+    window.sessionStorage.setItem(storageKey(userId), JSON.stringify(repaired.objects));
   },
 
   clear(userId: string): void {

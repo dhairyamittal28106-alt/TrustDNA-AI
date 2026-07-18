@@ -1,5 +1,5 @@
 import type { IdentityKnowledgeCategory, IdentityKnowledgeObject, KnowledgeExtractionInput, KnowledgeFactStatus } from "@/features/identity-knowledge/types";
-import { isHumanName } from "@/features/identity-knowledge/knowledge-integrity";
+import { createKnowledgeObjectId, isHumanName } from "@/features/identity-knowledge/knowledge-integrity";
 
 type FactMatch = {
   factKey: string;
@@ -216,7 +216,7 @@ export function logExtractionReport(report: SentenceExtractionReport[], sourceLa
 
 function toKnowledgeObject(match: FactMatch, input: KnowledgeExtractionInput): IdentityKnowledgeObject {
   return {
-    id: factId(match.factKey, match.value, input.genomeVersion, input.sourceLabel),
+    id: createKnowledgeObjectId(),
     factKey: match.factKey,
     title: match.title,
     value: match.value,
@@ -317,11 +317,4 @@ function compactEvidence(value: string): string {
 
 function sameValue(left: string, right: string): boolean {
   return left.trim().toLocaleLowerCase() === right.trim().toLocaleLowerCase();
-}
-
-function factId(...parts: string[]): string {
-  const input = parts.join("|");
-  let hash = 2166136261;
-  for (let index = 0; index < input.length; index += 1) hash = Math.imul(hash ^ input.charCodeAt(index), 16777619);
-  return `fact-${(hash >>> 0).toString(36)}`;
 }

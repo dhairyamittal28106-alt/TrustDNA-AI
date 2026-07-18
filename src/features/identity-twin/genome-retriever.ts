@@ -1,4 +1,5 @@
 import type { GenomeSection, GenomeSnapshot } from "@/features/identity-intelligence/types";
+import { deduplicateById } from "@/features/identity-knowledge/knowledge-integrity";
 import type { TwinIntent, TwinRetrievedGenome } from "@/features/identity-twin/types";
 
 const sectionIdsForIntent: Record<TwinIntent, string[]> = {
@@ -20,13 +21,14 @@ export class GenomeRetriever {
     const sections = included.length
       ? snapshot.sections.filter((section) => included.includes(section.id))
       : [];
+    const knowledgeObjects = deduplicateById(sections.flatMap((section) => section.traits), "Twin genome retriever");
 
     return {
       snapshot,
       sections,
-      knowledgeObjects: sections.flatMap((section) => section.traits),
-      timeline: snapshot.timeline,
-      sources: snapshot.sources,
+      knowledgeObjects,
+      timeline: deduplicateById(snapshot.timeline, "Twin genome retriever timeline"),
+      sources: deduplicateById(snapshot.sources, "Twin genome retriever sources"),
       version: snapshot.latestVersion?.version,
       confidence: snapshot.genomeConfidence,
     };

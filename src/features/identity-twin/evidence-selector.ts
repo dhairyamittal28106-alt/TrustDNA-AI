@@ -1,4 +1,5 @@
 import type { GenomeSection, KnowledgeObject } from "@/features/identity-intelligence/types";
+import { deduplicateById } from "@/features/identity-knowledge/knowledge-integrity";
 import type { TwinEvidence, TwinEvidenceBundle, TwinIntent, TwinRetrievedGenome } from "@/features/identity-twin/types";
 
 function isExplainable(item: { origin: string }): boolean {
@@ -19,9 +20,9 @@ function toEvidence(item: KnowledgeObject): TwinEvidence {
 
 export class EvidenceSelector {
   select(intent: TwinIntent, retrieved: TwinRetrievedGenome): TwinEvidenceBundle {
-    const sections = retrieved.sections.filter(isExplainable);
-    const knowledgeObjects = retrieved.knowledgeObjects.filter(isExplainable);
-    const evidence = knowledgeObjects.map(toEvidence);
+    const sections = deduplicateById(retrieved.sections.filter(isExplainable), "Twin evidence section selection");
+    const knowledgeObjects = deduplicateById(retrieved.knowledgeObjects.filter(isExplainable), "Twin evidence selection");
+    const evidence = deduplicateById(knowledgeObjects.map(toEvidence), "Twin evidence conversion");
 
     return {
       intent,
@@ -30,8 +31,8 @@ export class EvidenceSelector {
       knowledgeObjects,
       // Timeline entries are displayed as existing Genome references only. They are
       // never treated as evidence for a personal claim unless an extractor marks it so.
-      timeline: retrieved.timeline,
-      sources: retrieved.sources.filter((source) => source.status === "ingested"),
+      timeline: deduplicateById(retrieved.timeline, "Twin evidence timeline"),
+      sources: deduplicateById(retrieved.sources.filter((source) => source.status === "ingested"), "Twin evidence sources"),
       version: retrieved.version,
       genomeConfidence: retrieved.confidence,
     };

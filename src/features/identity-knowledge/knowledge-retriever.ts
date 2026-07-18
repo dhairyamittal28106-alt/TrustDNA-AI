@@ -1,4 +1,5 @@
 import type { IdentityKnowledgeObject } from "@/features/identity-knowledge/types";
+import { deduplicateById } from "@/features/identity-knowledge/knowledge-integrity";
 
 export type KnowledgeRetrievalIntent =
   | "identity"
@@ -58,11 +59,11 @@ export class KnowledgeRetriever {
     if (!definition) return [];
 
     const active = objects.filter((item) => item.status === "active" && definition.factKeys.includes(item.factKey));
-    if (!definition.includeHistory) return active;
+    if (!definition.includeHistory) return deduplicateById(active, "knowledge retriever");
 
     const history = objects
       .filter((item) => item.status === "superseded" && definition.factKeys.includes(item.factKey))
       .sort((left, right) => right.provenance.timestamp.localeCompare(left.provenance.timestamp));
-    return [...active, ...history];
+    return deduplicateById([...active, ...history], "knowledge retriever");
   }
 }

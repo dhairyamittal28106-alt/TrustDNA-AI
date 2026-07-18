@@ -1,6 +1,7 @@
 import type { HybridAdvice, TwinEvidenceBundle, TwinIntent, TwinPipelineStage, TwinResponse } from "@/features/identity-twin/types";
 import type { TwinReasoning } from "@/features/identity-twin/types";
 import type { IdentityReasoningResult } from "@/features/identity-reasoning/types";
+import { deduplicateById } from "@/features/identity-knowledge/knowledge-integrity";
 
 const pipelineLabels: Array<Pick<TwinPipelineStage, "id" | "label">> = [
   { id: "question", label: "Question received" },
@@ -16,11 +17,19 @@ const pipelineLabels: Array<Pick<TwinPipelineStage, "id" | "label">> = [
 
 export class TwinResponseBuilder {
   build(question: string, intent: TwinIntent, bundle: TwinEvidenceBundle, reasoning: TwinReasoning, identityReasoning?: IdentityReasoningResult, hybridAdvice?: HybridAdvice): TwinResponse {
-    const evidenceCount = bundle.evidence.length;
+    const deduplicatedBundle: TwinEvidenceBundle = {
+      ...bundle,
+      evidence: deduplicateById(bundle.evidence, "Twin response evidence"),
+      sections: deduplicateById(bundle.sections, "Twin response sections"),
+      knowledgeObjects: deduplicateById(bundle.knowledgeObjects, "Twin response knowledge objects"),
+      timeline: deduplicateById(bundle.timeline, "Twin response timeline"),
+      sources: deduplicateById(bundle.sources, "Twin response sources"),
+    };
+    const evidenceCount = deduplicatedBundle.evidence.length;
     const pipeline = pipelineLabels.map((stage) => ({
       ...stage,
       status: "complete" as const,
-      detail: this.detailFor(stage.id, intent, evidenceCount, bundle.version),
+      detail: this.detailFor(stage.id, intent, evidenceCount, deduplicatedBundle.version),
     }));
 
     return {
@@ -30,8 +39,8 @@ export class TwinResponseBuilder {
       answer: reasoning.answer,
       confidence: reasoning.confidence,
       confidenceLabel: reasoning.confidence === null ? "Unknown" : `${reasoning.confidence}%`,
-      evidenceUsed: bundle.evidence,
-      evidenceBundle: bundle,
+      evidenceUsed: deduplicatedBundle.evidence,
+      evidenceBundle: deduplicatedBundle,
       reasoningSummary: reasoning.reasoningSummary,
       limitations: reasoning.limitations,
       suggestedSources: reasoning.suggestedSources,

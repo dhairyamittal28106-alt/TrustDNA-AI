@@ -1,5 +1,6 @@
 import { DeterministicKnowledgeExtractor } from "@/features/identity-intelligence/contracts";
 import { KnowledgeVersionManager } from "@/features/identity-knowledge/knowledge-version-manager";
+import { deduplicateById, repairStoredKnowledge } from "@/features/identity-knowledge/knowledge-integrity";
 import type { IdentityKnowledgeObject } from "@/features/identity-knowledge/types";
 import type {
   GenomeSection,
@@ -22,7 +23,8 @@ const pendingCategories = [
 ] as const;
 
 export async function buildGenomeSnapshot(payload: IntelligenceApiPayload | undefined, sources: SourceRecord[], knowledgeHistory: IdentityKnowledgeObject[] = []): Promise<GenomeSnapshot> {
-  if (!payload) return emptyGenomeSnapshot(sources, knowledgeHistory);
+  const repairedHistory = repairStoredKnowledge(knowledgeHistory).objects;
+  if (!payload) return emptyGenomeSnapshot(sources, repairedHistory);
 
   const latestVersion = payload.versions[payload.versions.length - 1];
   const features = payload.profile?.features ?? latestVersion?.features;
@@ -35,7 +37,7 @@ export async function buildGenomeSnapshot(payload: IntelligenceApiPayload | unde
 
   if (!features) {
     return {
-      ...emptyGenomeSnapshot(sources, knowledgeHistory),
+      ...emptyGenomeSnapshot(sources, repairedHistory),
       genome: payload.genome,
       latestVersion,
       versions: payload.versions,
@@ -47,11 +49,11 @@ export async function buildGenomeSnapshot(payload: IntelligenceApiPayload | unde
   }
 
   const featureKnowledge = await new DeterministicKnowledgeExtractor().extract({ features, evidenceSources, updatedAt });
-  const identityFacts = knowledgeHistory.filter((fact) => fact.status === "active");
-  const knowledgeObjects = [...identityFacts.map(toKnowledgeObject), ...featureKnowledge];
+  const identityFacts = repairedHistory.filter((fact) => fact.status === "active");
+  const knowledgeObjects = deduplicateById([...identityFacts.map(toKnowledgeObject), ...featureKnowledge], "genome snapshot");
   const sections = buildSections(knowledgeObjects, identityFacts, confidence, evidenceSources, updatedAt);
   const insights = buildInsights(features, latestVersion?.version, confidence, sourceCount, updatedAt, identityFacts);
-  const timeline = [...buildTimeline(payload, evidenceSources), ...new KnowledgeVersionManager().timeline(knowledgeHistory)]
+  const timeline = deduplicateById([...buildTimeline(payload, evidenceSources), ...new KnowledgeVersionManager().timeline(repairedHistory)], "genome timeline")
     .sort((left, right) => (right.timestamp ?? "").localeCompare(left.timestamp ?? ""));
   const knowledgeGraph = buildKnowledgeGraph(knowledgeObjects, identityFacts, evidenceSources);
 
@@ -68,7 +70,7 @@ export async function buildGenomeSnapshot(payload: IntelligenceApiPayload | unde
     knowledgeGraph,
     knowledgeObjects,
     identityFacts,
-    knowledgeHistory,
+    knowledgeHistory: repairedHistory,
     sourceCount,
     genomeConfidence: confidence,
     fingerprint: latestVersion?.fingerprint,
@@ -77,6 +79,7 @@ export async function buildGenomeSnapshot(payload: IntelligenceApiPayload | unde
 }
 
 export function emptyGenomeSnapshot(sources: SourceRecord[] = [], knowledgeHistory: IdentityKnowledgeObject[] = []): GenomeSnapshot {
+  const repairedHistory = repairStoredKnowledge(knowledgeHistory).objects;
   const pendingSections = buildPendingSections();
   return {
     sources,
@@ -134,8 +137,8 @@ export function emptyGenomeSnapshot(sources: SourceRecord[] = [], knowledgeHisto
       edges: [{ from: "genome", to: "source" }],
     },
     knowledgeObjects: [],
-    identityFacts: knowledgeHistory.filter((fact) => fact.status === "active"),
-    knowledgeHistory,
+    identityFacts: repairedHistory.filter((fact) => fact.status === "active"),
+    knowledgeHistory: repairedHistory,
     sourceCount: 0,
     hasExtractedKnowledge: false,
   };
