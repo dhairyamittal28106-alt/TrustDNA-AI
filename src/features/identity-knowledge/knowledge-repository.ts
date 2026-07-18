@@ -1,4 +1,5 @@
 import type { IdentityKnowledgeObject } from "@/features/identity-knowledge/types";
+import { repairStoredKnowledge } from "@/features/identity-knowledge/knowledge-integrity";
 
 const knownTechnicalValues = new Set([
   "angular", "c", "c++", "c#", "dart", "django", "fastapi", "flask", "go", "java", "javascript", "kotlin", "laravel", "next.js", "nextjs", "node.js", "nodejs", "php", "python", "r", "react", "react native", "ruby", "rust", "spring", "swift", "tailwind", "typescript", "vue", "vue.js",
@@ -15,7 +16,14 @@ export const knowledgeRepository = {
     try {
       const raw = window.sessionStorage.getItem(storageKey(userId));
       const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? supersedeAmbiguousLegacyFacts(parsed as IdentityKnowledgeObject[]) : [];
+      if (!Array.isArray(parsed)) return [];
+      const legacySafe = supersedeAmbiguousLegacyFacts(parsed as IdentityKnowledgeObject[]);
+      const repaired = repairStoredKnowledge(legacySafe);
+      if (repaired.repairs.length) {
+        window.sessionStorage.setItem(storageKey(userId), JSON.stringify(repaired.objects));
+        console.warn("[TrustDNA][knowledge-integrity] Repaired stored Knowledge Objects", repaired.repairs);
+      }
+      return repaired.objects;
     } catch {
       return [];
     }

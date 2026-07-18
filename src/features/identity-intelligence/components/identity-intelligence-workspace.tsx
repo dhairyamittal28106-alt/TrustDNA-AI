@@ -24,6 +24,7 @@ import { GenomeEvolutionTimeline } from "@/features/identity-evolution/component
 import { GenomeEvolutionService } from "@/features/identity-evolution/genome-evolution-service";
 import { addSessionSource, browserGenomeStore } from "@/features/identity-intelligence/session";
 import { finalizeExtractionReport, IdentityKnowledgeExtractor, logExtractionReport } from "@/features/identity-knowledge/identity-knowledge-extractor";
+import { KnowledgeLifecycleTracer } from "@/features/identity-knowledge/knowledge-lifecycle-tracer";
 import { KnowledgeMerger } from "@/features/identity-knowledge/knowledge-merger";
 import { knowledgeRepository } from "@/features/identity-knowledge/knowledge-repository";
 import { GuardianEventBus } from "@/features/guardian/guardian-event-bus";
@@ -32,6 +33,7 @@ import type { GenomeSnapshot, SourceRecord } from "@/features/identity-intellige
 const evolutionService = new GenomeEvolutionService();
 const knowledgeExtractor = new IdentityKnowledgeExtractor();
 const knowledgeMerger = new KnowledgeMerger();
+const knowledgeLifecycleTracer = new KnowledgeLifecycleTracer();
 const guardianEvents = new GuardianEventBus();
 
 export function IdentityIntelligenceWorkspace() {
@@ -123,10 +125,20 @@ export function IdentityIntelligenceWorkspace() {
         genomeVersion: version ?? "unversioned",
         timestamp,
       });
-      const mergedFacts = knowledgeMerger.merge(knowledgeRepository.load(userId), extraction.facts);
+      knowledgeLifecycleTracer.trace("extraction", extraction.facts);
+      const repositoryBeforeMerge = knowledgeRepository.load(userId);
+      knowledgeLifecycleTracer.trace("repository_before_merge", repositoryBeforeMerge);
+      const mergedFacts = knowledgeMerger.merge(repositoryBeforeMerge, extraction.facts);
+      knowledgeLifecycleTracer.traceMerge(mergedFacts);
       knowledgeRepository.save(userId, mergedFacts.objects);
+      const persistedFacts = knowledgeRepository.load(userId);
+      knowledgeLifecycleTracer.trace("repository_after_save", persistedFacts);
       logExtractionReport(finalizeExtractionReport(extraction, mergedFacts.objects), input.sourceLabel);
-      const nextSnapshot = await buildGenomeSnapshot(payload, session.sources, mergedFacts.objects);
+      const nextSnapshot = await buildGenomeSnapshot(payload, session.sources, persistedFacts);
+      knowledgeLifecycleTracer.trace("genome_snapshot", nextSnapshot.knowledgeHistory);
+      // Question-specific selection remains in the read-only retriever; this
+      // stage records the exact immutable history it receives.
+      knowledgeLifecycleTracer.trace("retriever_input", nextSnapshot.knowledgeHistory);
       setSnapshot(nextSnapshot);
       evolutionService.synchronize(userId, nextSnapshot);
       guardianEvents.publish("evidence_added", mergedFacts.added.length ? `Learned ${mergedFacts.added.length} new direct Identity Knowledge fact${mergedFacts.added.length === 1 ? "" : "s"}.` : "Updated current Identity Genome evidence.");

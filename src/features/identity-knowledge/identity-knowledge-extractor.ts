@@ -1,4 +1,5 @@
 import type { IdentityKnowledgeCategory, IdentityKnowledgeObject, KnowledgeExtractionInput, KnowledgeFactStatus } from "@/features/identity-knowledge/types";
+import { isHumanName } from "@/features/identity-knowledge/knowledge-integrity";
 
 type FactMatch = {
   factKey: string;
@@ -90,8 +91,12 @@ export class IdentityKnowledgeExtractor {
     const statementStatus = temporalStatus(sentence);
     const add = (definition: FactDefinition, value: string, status = statementStatus) => matches.push({ ...definition, value, evidence: sentence, status });
 
-    const name = firstMatch(sentence, [/^(?:my name is|name\s*[:\-]|i am|i'm)\s+(.+)$/i]);
-    if (name && looksLikeName(name)) add({ factKey: "name", title: "Name", category: "identity" }, name);
+    const explicitName = firstMatch(sentence, [/^(?:my name is|name\s*[:\-])\s+(.+)$/i]);
+    if (explicitName && isHumanName(explicitName)) add({ factKey: "name", title: "Name", category: "identity" }, explicitName);
+    else if (explicitName) discarded.push("The explicit Name value is not a valid human name.");
+    const firstPersonName = firstMatch(sentence, [/^(?:i am|i'm)\s+(.+)$/i]);
+    if (firstPersonName && isHumanName(firstPersonName)) add({ factKey: "name", title: "Name", category: "identity" }, firstPersonName);
+    else if (firstPersonName) discarded.push("An \"I am\" statement was not stored as Name because it is not a valid human name.");
 
     const dateOfBirth = firstMatch(sentence, [/^(?:i was born on|my (?:date of birth|birthday) is|date of birth\s*[:\-])\s+(.+)$/i]);
     if (dateOfBirth) add({ factKey: "date_of_birth", title: "Date of birth", category: "identity" }, dateOfBirth);
@@ -140,7 +145,7 @@ export class IdentityKnowledgeExtractor {
       /^i\s+(?:have\s+)?(?:built|created|developed|made|launched)\s+(.+)$/i,
       /^(?:my\s+)?projects?\s*(?:include|are|:)?\s*(.+)$/i,
     ]);
-    if (projectValues) splitList(projectValues).forEach((value) => add({ factKey: "project", title: "Project", category: "projects" }, value));
+    if (projectValues) splitList(projectValues).map(normalizeProjectValue).filter(Boolean).forEach((value) => add({ factKey: "project", title: "Project", category: "projects" }, value));
 
     const favoriteSport = firstMatch(sentence, [/^my favou?rite sport(?: is|:)?\s+(.+)$/i]);
     if (favoriteSport) add({ factKey: "sport", title: "Favorite sport", category: "sports" }, favoriteSport);
@@ -282,8 +287,11 @@ function splitList(value: string): string[] {
     .filter((item) => item.length >= 1 && item.length <= 120);
 }
 
-function looksLikeName(value: string): boolean {
-  return !/\b(?:a|an|the|studying|pursuing|working|student|developer|founder)\b/i.test(value);
+function normalizeProjectValue(value: string): string {
+  return normalizeValue(value)
+    .replace(/^(?:(?:a|an|the)\s+)?(?:project|app|application|platform)\s+(?:called|named)\s+/i, "")
+    .replace(/^projects?\s+(?:called|named)\s+/i, "")
+    .trim();
 }
 
 function normalizeValue(value: string): string {
