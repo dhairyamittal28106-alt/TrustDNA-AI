@@ -38,7 +38,10 @@ const languages = new Set([
   "assembly", "bash", "c", "c++", "c#", "css", "dart", "go", "html", "java", "javascript", "kotlin", "matlab", "php", "python", "r", "ruby", "rust", "scala", "sql", "swift", "typescript",
 ]);
 const frameworks = new Set([
-  "angular", "django", "fastapi", "flask", "laravel", "next.js", "nextjs", "node.js", "nodejs", "react", "react native", "spring", "tailwind", "vue", "vue.js",
+  "angular", "django", "express", "express.js", "fastapi", "flask", "laravel", "next.js", "nextjs", "node.js", "nodejs", "react", "react native", "spring", "tailwind", "vue", "vue.js",
+]);
+const tools = new Set([
+  "aws", "docker", "firebase", "git", "kubernetes", "linux", "mongodb", "postgresql",
 ]);
 
 /**
@@ -110,7 +113,7 @@ export class IdentityKnowledgeExtractor {
     if (school) add({ factKey: "school", title: "School", category: "education" }, school);
 
     const dream = firstMatch(sentence, [
-      /^(?:my\s+(?:biggest|greatest|ultimate)\s+dream|my dream|my ambition|my aspiration|dream|ambition|aspiration)\s*(?:is|:)?\s*(.+)$/i,
+      /^(?:(?:my\s+(?:(?:biggest|greatest|ultimate|long[-\s]term)\s+)?dream)|my\s+(?:ambition|aspiration|mission)|dream|ambition|aspiration|mission)\s*(?:is|:)?\s*(.+)$/i,
       /^i\s+(?:dream of|aspire to|hope to)\s+(.+)$/i,
     ]);
     if (dream) add({ factKey: "dream", title: "Dream", category: "goals" }, dream);
@@ -122,7 +125,7 @@ export class IdentityKnowledgeExtractor {
     if (career) add({ factKey: "career", title: "Career", category: "career" }, career);
 
     const goal = firstMatch(sentence, [
-      /^(?:my\s+)?goals?\s*(?:are|is|:)?\s*(.+)$/i,
+      /^(?:my\s+(?:long[-\s]term\s+)?)?goals?\s*(?:are|is|:)?\s*(.+)$/i,
       /^i\s+(?:want|plan|aim|intend|hope)\s+to\s+(.+)$/i,
     ]);
     if (goal) add({ factKey: "goal", title: "Goal", category: "goals" }, goal.startsWith("to ") ? goal : `to ${goal}`);
@@ -130,19 +133,21 @@ export class IdentityKnowledgeExtractor {
     const values = firstMatch(sentence, [
       /^(?:my\s+)?(?:core\s+)?values?\s*(?:are|is|include|:)?\s*(.+)$/i,
       /^i\s+(?:value|believe in|care about)\s+(.+)$/i,
+      /^(?:my\s+)?principles?\s*(?:are|is|include|:)?\s*(.+)$/i,
       /^what matters to me\s*(?:is|:)?\s*(.+)$/i,
     ]);
     if (values) splitList(values).forEach((value) => add({ factKey: "value", title: "Value", category: "values" }, value));
 
     const motivations = firstMatch(sentence, [
-      /^(?:my\s+)?(?:biggest\s+)?motivation\s*(?:is|:)?\s*(.+)$/i,
-      /^what motivates me\s*(?:is|:)?\s*(.+)$/i,
+      /^(?:my\s+)?(?:biggest\s+)?motivations?(?:\s+(?:is|are)|\s*:\s*)(.+)$/i,
+      /^what motivates me(?:\s+(?:is|are)|\s*:\s*)(.+)$/i,
       /^i\s+am\s+(?:motivated|driven)\s+by\s+(.+)$/i,
+      /^i\s+want\s+to\s+((?:help|improve)\b.+)$/i,
     ]);
     if (motivations) splitList(motivations).forEach((value) => add({ factKey: "motivation", title: "Motivation", category: "motivations" }, value));
 
     const projectValues = firstMatch(sentence, [
-      /^i\s+(?:have\s+)?(?:built|created|developed|made|launched)\s+(.+)$/i,
+      /^i\s+(?:have\s+)?(?:built|created|developed|made|launched|designed)\s+(.+)$/i,
       /^(?:my\s+)?projects?\s*(?:include|are|:)?\s*(.+)$/i,
     ]);
     if (projectValues) splitList(projectValues).map(normalizeProjectValue).filter(Boolean).forEach((value) => add({ factKey: "project", title: "Project", category: "projects" }, value));
@@ -152,18 +157,24 @@ export class IdentityKnowledgeExtractor {
     const playedSport = firstMatch(sentence, [/^i\s+(?:play|enjoy playing)\s+(.+)$/i]);
     if (playedSport) add({ factKey: "sport", title: "Sport", category: "sports" }, playedSport);
 
-    const favoritePlayer = sentence.match(/^(?:(now|currently|current|latest|previously|earlier|before|formerly|used to)\s+)?my favou?rite (?:player|cricketer)\s+(was|is|:)?\s*(.+)$/i);
-    if (favoritePlayer?.[3]) {
-      const marker = favoritePlayer[1]?.toLocaleLowerCase();
-      const historical = favoritePlayer[2]?.toLocaleLowerCase() === "was" || ["previously", "earlier", "before", "formerly", "used to"].includes(marker ?? "");
-      add({ factKey: "favorite_player", title: "Favorite cricketer", category: "sports" }, favoritePlayer[3], historical ? "superseded" : "active");
+    const favoritePlayer = sentence.match(/^(?:(now|currently|current|latest|previously|earlier|before|formerly|used to)\s+)?my\s+(?:(now|currently|current|latest|previously|earlier|before|formerly|used to)\s+)?favou?rite (?:player|cricketer)\s+(was|is|:)?\s*(.+)$/i);
+    if (favoritePlayer?.[4]) {
+      const marker = (favoritePlayer[1] ?? favoritePlayer[2])?.toLocaleLowerCase();
+      const historical = favoritePlayer[3]?.toLocaleLowerCase() === "was" || ["previously", "earlier", "before", "formerly", "used to"].includes(marker ?? "");
+      add({ factKey: "favorite_player", title: "Favorite cricketer", category: "sports" }, favoritePlayer[4], historical ? "superseded" : "active");
     }
 
-    const interest = firstMatch(sentence, [/^i\s+(?:enjoy|like|love|am interested in)\s+(.+)$/i, /^(?:my\s+)?interests?\s*(?:include|are|:)?\s*(.+)$/i]);
-    if (interest) splitList(interest).forEach((value) => add({ factKey: "interest", title: "Interest", category: "interests" }, value));
+    const books = firstMatch(sentence, [/^i\s+(?:enjoy|like|love)\s+reading\s+(.+)$/i]);
+    if (books) {
+      add({ factKey: "interest", title: "Interest", category: "interests" }, "reading");
+      splitList(books).forEach((value) => add({ factKey: "book", title: "Book", category: "interests" }, value));
+    } else {
+      const interest = firstMatch(sentence, [/^i\s+(?:enjoy|like|love|am interested in)\s+(.+)$/i, /^(?:my\s+)?interests?\s*(?:include|are|:)?\s*(.+)$/i]);
+      if (interest) splitList(interest).forEach((value) => add({ factKey: "interest", title: "Interest", category: "interests" }, value));
+    }
 
     const technical = firstMatch(sentence, [
-      /^i\s+(?:know|use|code in|work with|am proficient in|have experience with)\s+(.+)$/i,
+      /^i\s+(?:know|(?:regularly\s+)?use|code in|work with|am proficient in|have experience (?:in|with))\s+(.+)$/i,
       /^(?:my\s+)?(?:technical\s+)?(?:skills|programming languages?|frameworks?|technologies|tech stack)\s*(?:include|are|:)?\s*(.+)$/i,
     ]);
     if (technical) {
@@ -259,6 +270,7 @@ function extractTechnicalFacts(value: string, evidence: string): { matches: Fact
     const normalized = item.toLocaleLowerCase();
     if (languages.has(normalized)) matches.push({ factKey: "programming_language", title: "Programming language", value: item, category: "skills", evidence });
     else if (frameworks.has(normalized)) matches.push({ factKey: "framework", title: "Framework", value: item, category: "skills", evidence });
+    else if (tools.has(normalized)) matches.push({ factKey: "technology", title: "Technology", value: item, category: "technologies", evidence });
     else discarded.push(`"${item}" is not in the supported deterministic language/framework registry.`);
   });
   return { matches, discarded };
@@ -295,7 +307,7 @@ function normalizeProjectValue(value: string): string {
 }
 
 function normalizeValue(value: string): string {
-  return value.replace(/\s+/g, " ").replace(/[,:;\-]+$/g, "").trim();
+  return value.replace(/\s+/g, " ").replace(/^[\s'"“”]+|[\s,;:!?…'"“”]+$/gu, "").trim();
 }
 
 function compactEvidence(value: string): string {
