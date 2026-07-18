@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { GmailSyncService } from "@/features/gmail/server/gmail-sync-service";
 import { GmailApiError } from "@/features/gmail/server/gmail-connector";
 import { GenomeUpdateError } from "@/features/gmail/server/genome-update-service";
+import { maskToken, tokenKind } from "@/features/gmail/token-diagnostics";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
   const displayName = stringValue(body.displayName)?.trim();
   const genomeId = stringValue(body.genomeId)?.trim();
   if (!accessToken || accessToken.length < 20) return errorResponse("GMAIL_TOKEN_REQUIRED", "Gmail authorization is required before a sync can start.", 401);
+  console.info("[trustdna:gmail] /api/gmail/sync received token", { tokenKind: tokenKind(accessToken), token: maskToken(accessToken), hasGenomeId: Boolean(genomeId) });
   if (!displayName || displayName.length > 120) return errorResponse("DISPLAY_NAME_INVALID", "A valid identity name is required before Gmail can update your Genome.", 400);
   if (genomeId && !isUuid(genomeId)) return errorResponse("GENOME_ID_INVALID", "The saved Identity Genome reference is not valid. Rebuild your Genome before syncing Gmail.", 400);
 
@@ -28,7 +30,10 @@ export async function POST(request: Request) {
     const result = await gmailSyncService.sync({ accessToken, genomeId, displayName });
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    if (error instanceof GmailApiError) return errorResponse(error.code, error.message, error.status);
+    if (error instanceof GmailApiError) {
+      console.error("[trustdna:gmail] gmail api request failed", { ...error.diagnostics, stack: error.stack });
+      return errorResponse(error.code, error.message, error.status);
+    }
     if (error instanceof GenomeUpdateError) return errorResponse(error.code ?? "GENOME_UPDATE_FAILED", error.message, error.status >= 400 && error.status < 600 ? error.status : 502);
     return errorResponse("GMAIL_SYNC_UNAVAILABLE", "Gmail could not be synchronized right now. No Genome update was created.", 502);
   }

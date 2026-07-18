@@ -4,6 +4,7 @@ import { FirebaseError } from "firebase/app";
 import { getAdditionalUserInfo, GoogleAuthProvider, linkWithPopup, reauthenticateWithPopup } from "firebase/auth";
 import { gmailReadOnlyScope, requestTrustDnaGoogleScopes } from "@/features/gmail/google-oauth-scopes";
 import { getFirebaseServices } from "@/lib/firebase";
+import { maskToken, tokenKind } from "@/features/gmail/token-diagnostics";
 import type { GmailAuthorization } from "@/features/gmail/types";
 
 export { gmailReadOnlyScope };
@@ -33,8 +34,16 @@ export class GmailConnector {
         ? await reauthenticateWithPopup(user, provider)
         : await linkWithPopup(user, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
+      console.info("[trustdna:gmail] oauth popup completed", {
+        flow: hasGoogleProvider ? "reauthenticate" : "link",
+        providerId: credential?.providerId ?? null,
+        hasAccessToken: Boolean(credential?.accessToken),
+        hasIdToken: Boolean(credential?.idToken),
+      });
       if (!credential?.accessToken) throw new GmailConnectorError("Google did not return a Gmail access token. Please try connecting again.", "GMAIL_TOKEN_MISSING");
-      await assertGmailReadOnlyScope(credential.accessToken);
+      console.info("[trustdna:gmail] oauth credential token", { tokenKind: tokenKind(credential.accessToken), token: maskToken(credential.accessToken) });
+      const scopes = await assertGmailReadOnlyScope(credential.accessToken);
+      console.info("[trustdna:gmail] granted oauth scopes", { scopes, gmailReadOnlyGranted: scopes.includes(gmailReadOnlyScope) });
       const profile = getAdditionalUserInfo(result)?.profile;
       const connectedEmail = profile && typeof profile.email === "string" ? profile.email : result.user.email;
       if (!connectedEmail) throw new GmailConnectorError("Google did not return an email address for this connection.", "GMAIL_EMAIL_MISSING");
@@ -45,7 +54,7 @@ export class GmailConnector {
   }
 }
 
-async function assertGmailReadOnlyScope(accessToken: string): Promise<void> {
+async function assertGmailReadOnlyScope(accessToken: string): Promise<string[]> {
   let payload: unknown;
   try {
     const response = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${encodeURIComponent(accessToken)}`, { cache: "no-store" });
@@ -56,9 +65,11 @@ async function assertGmailReadOnlyScope(accessToken: string): Promise<void> {
   }
 
   const scope = payload && typeof payload === "object" && "scope" in payload && typeof payload.scope === "string" ? payload.scope : "";
-  if (!scope.split(/\s+/).includes(gmailReadOnlyScope)) {
+  const scopes = scope.split(/\s+/).filter(Boolean);
+  if (!scopes.includes(gmailReadOnlyScope)) {
     throw new GmailConnectorError("Gmail permission needs to be re-authorized.", "GMAIL_SCOPE_MISSING");
   }
+  return scopes;
 }
 
 function friendlyGmailAuthError(error: unknown): string {

@@ -15,7 +15,7 @@ export class GmailSyncService {
   async sync(input: { accessToken: string; genomeId?: string; displayName: string }): Promise<GmailSyncResult> {
     const messages = await this.connector.listSentMessages(input.accessToken, configuredMessageLimit());
     const artifact = this.communicationExtractor.extract(messages);
-    if (!artifact.content || !artifact.messagesAnalyzed) throw new GmailApiError("No readable sent messages were available for this Gmail account. TrustDNA did not update your Genome.", 422, "GMAIL_NO_SENT_MESSAGES");
+    if (!artifact.content || !artifact.messagesAnalyzed) throw new GmailApiError("No readable sent messages were available for this Gmail account. TrustDNA did not update your Genome.", 422, "GMAIL_NO_SENT_MESSAGES", { step: "communication_extraction", messagesRetrieved: messages.length, messagesAnalyzed: artifact.messagesAnalyzed });
 
     const sourceLabel = "Gmail sent-email sync";
     const update = await this.genomeUpdateService.update({
