@@ -23,7 +23,7 @@ import { GenomeDiffPanel } from "@/features/identity-evolution/components/genome
 import { GenomeEvolutionTimeline } from "@/features/identity-evolution/components/genome-evolution-timeline";
 import { GenomeEvolutionService } from "@/features/identity-evolution/genome-evolution-service";
 import { addSessionSource, browserGenomeStore } from "@/features/identity-intelligence/session";
-import { IdentityKnowledgeExtractor } from "@/features/identity-knowledge/identity-knowledge-extractor";
+import { finalizeExtractionReport, IdentityKnowledgeExtractor, logExtractionReport } from "@/features/identity-knowledge/identity-knowledge-extractor";
 import { KnowledgeMerger } from "@/features/identity-knowledge/knowledge-merger";
 import { knowledgeRepository } from "@/features/identity-knowledge/knowledge-repository";
 import { GuardianEventBus } from "@/features/guardian/guardian-event-bus";
@@ -117,14 +117,15 @@ export function IdentityIntelligenceWorkspace() {
       browserGenomeStore.save(userId, session);
       const version = payload.profile?.version ?? payload.versions[payload.versions.length - 1]?.version;
       const timestamp = payload.profile?.updated_at ?? payload.versions[payload.versions.length - 1]?.created_at ?? new Date().toISOString();
-      const extractedFacts = knowledgeExtractor.extract({
+      const extraction = knowledgeExtractor.extractWithReport({
         content: input.content,
         sourceLabel: input.sourceLabel,
         genomeVersion: version ?? "unversioned",
         timestamp,
       });
-      const mergedFacts = knowledgeMerger.merge(knowledgeRepository.load(userId), extractedFacts);
+      const mergedFacts = knowledgeMerger.merge(knowledgeRepository.load(userId), extraction.facts);
       knowledgeRepository.save(userId, mergedFacts.objects);
+      logExtractionReport(finalizeExtractionReport(extraction, mergedFacts.objects), input.sourceLabel);
       const nextSnapshot = await buildGenomeSnapshot(payload, session.sources, mergedFacts.objects);
       setSnapshot(nextSnapshot);
       evolutionService.synchronize(userId, nextSnapshot);

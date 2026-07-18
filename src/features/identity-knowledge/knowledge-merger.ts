@@ -17,6 +17,15 @@ export class KnowledgeMerger {
         continue;
       }
 
+      if (isMultiValueFact(next.factKey)) {
+        const alreadyStored = objects.some((item) => item.factKey === next.factKey && sameValue(item.value, next.value));
+        if (!alreadyStored) {
+          objects = [...objects, next];
+          added.push(next);
+        }
+        continue;
+      }
+
       const active = objects.find((item) => item.factKey === next.factKey && item.status === "active");
       if (active && sameValue(active.value, next.value)) continue;
 
@@ -32,6 +41,11 @@ export class KnowledgeMerger {
 
     return { objects, added, updated };
   }
+}
+
+/** Facts such as projects and skills are additive, not mutually exclusive profile fields. */
+function isMultiValueFact(factKey: string): boolean {
+  return ["goal", "dream", "project", "programming_language", "framework", "skill", "technology", "interest", "sport"].includes(factKey);
 }
 
 function sameValue(left: string, right: string): boolean {
