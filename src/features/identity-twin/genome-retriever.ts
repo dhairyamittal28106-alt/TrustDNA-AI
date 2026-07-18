@@ -8,6 +8,7 @@ const sectionIdsForIntent: Record<TwinIntent, string[]> = {
   artifact_comparison: ["communication", "writing", "professional"],
   evidence_requirements: [],
   identity_summary: ["communication", "writing", "vocabulary", "professional"],
+  identity_reasoning: ["identity-facts", "communication", "writing", "professional"],
   unknown: [],
 };
 

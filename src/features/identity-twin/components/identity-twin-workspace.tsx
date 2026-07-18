@@ -16,6 +16,7 @@ import { GuardianEventBus } from "@/features/guardian/guardian-event-bus";
 import { TwinConversation } from "@/features/identity-twin/components/twin-conversation";
 import { TwinEvidencePanel } from "@/features/identity-twin/components/twin-evidence-panel";
 import { TwinReasoningPanel } from "@/features/identity-twin/components/twin-reasoning-panel";
+import { IdentityReasoningTrace } from "@/features/identity-reasoning/components/identity-reasoning-trace";
 import { IdentityTwinService } from "@/features/identity-twin/service";
 import type { TwinConversationMessage, TwinGuardianState, TwinResponse } from "@/features/identity-twin/types";
 
@@ -28,13 +29,16 @@ const suggestedQuestions = [
   "What skills do I have?",
   "Which university do I attend?",
   "Who is my favorite cricketer?",
+  "Would I make a good entrepreneur?",
+  "What motivates me?",
+  "Should I pursue higher studies?",
   "Does this email sound like me?",
 ];
 
 const initialMessages: TwinConversationMessage[] = [{
   id: "twin-greeting",
   role: "twin",
-  content: "I’m your evidence-bound Identity Twin. I can describe measured communication signals and observed vocabulary in your Identity Genome, explain what evidence is missing, and never invent a personal history.",
+  content: "I’m your evidence-bound Identity Twin. I can answer direct Identity Facts and offer structured decision support from your stored evidence, while keeping missing evidence, alternative views, and limits visible.",
 }];
 
 export function IdentityTwinWorkspace() {
@@ -182,6 +186,7 @@ export function IdentityTwinWorkspace() {
     </motion.div>
     {error && <div role="status" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200/15 bg-amber-200/[.06] p-4 text-sm text-amber-50"><div className="flex items-start gap-3"><CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-amber-200" /><div><p className="font-medium">Identity Twin needs attention</p><p className="mt-1 text-xs leading-5 text-amber-100/75">{error}</p></div></div><Button type="button" onClick={retryLoading} variant="outline" className="border-amber-200/20 bg-transparent text-amber-50 hover:bg-amber-200/[.08] hover:text-white"><RefreshCw aria-hidden="true" className="size-3.5" />Try again</Button></div>}
     <motion.div initial={{ opacity: 0, y: reduceMotion ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduceMotion ? 0 : .08, duration: reduceMotion ? 0 : .4 }} className="mt-8 grid items-start gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(17rem,.78fr)_minmax(17rem,.72fr)]"><TwinConversation messages={messages} question={question} isProcessing={isProcessing} hasEvidence={snapshot.hasExtractedKnowledge} suggestedQuestions={suggestedQuestions} onQuestionChange={setQuestion} onSubmit={handleSubmit} onSuggestedQuestion={handleSuggestedQuestion} /><TwinReasoningPanel response={selectedResponse} snapshot={snapshot} guardianState={guardianState} activePipelineStage={activePipelineStage} isProcessing={isProcessing} identityLabel={identityLabel} /><TwinEvidencePanel response={selectedResponse} snapshot={snapshot} /></motion.div>
+    <IdentityReasoningTrace reasoning={selectedResponse?.identityReasoning} />
     {!snapshot.hasExtractedKnowledge && <div className="mt-5 flex flex-col items-center justify-between gap-4 rounded-2xl border border-[#a99bff]/15 bg-[#8d79f7]/[.06] p-5 text-center sm:flex-row sm:text-left"><div><div className="flex items-center justify-center gap-2 sm:justify-start"><Fingerprint aria-hidden="true" className="size-4 text-[#c4bcff]" /><p className="font-mono text-[10px] tracking-[.14em] text-[#c4bcff]">TWIN EVIDENCE BOUNDARY</p></div><p className="mt-2 max-w-3xl text-xs leading-5 text-slate-400">The Twin will not infer your goals, skills, relationships, or identity from a blank profile. Add a consented text source to unlock explainable communication evidence.</p></div><Button asChild variant="outline" className="shrink-0 border-white/[.12] bg-transparent text-slate-200 hover:bg-white/[.06] hover:text-white"><Link href="/genome">Add Identity Genome evidence</Link></Button></div>}
   </section>;
 }

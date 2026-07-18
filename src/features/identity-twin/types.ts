@@ -6,6 +6,7 @@ import type {
   KnowledgeOrigin,
   SourceRecord,
 } from "@/features/identity-intelligence/types";
+import type { IdentityReasoningResult } from "@/features/identity-reasoning/types";
 
 export type TwinIntent =
   | "identity_facts"
@@ -14,6 +15,7 @@ export type TwinIntent =
   | "artifact_comparison"
   | "evidence_requirements"
   | "identity_summary"
+  | "identity_reasoning"
   | "unknown";
 
 export type TwinGuardianState = "listening" | "thinking" | "reasoning" | "answer_ready";
@@ -25,6 +27,8 @@ export type TwinPipelineStageId =
   | "evidence"
   | "knowledge"
   | "reasoning"
+  | "decision"
+  | "confidence"
   | "answer";
 
 export type TwinPipelineStatus = "pending" | "active" | "complete";
@@ -82,6 +86,8 @@ export type TwinResponse = TwinReasoning & {
   confidenceLabel: string;
   evidenceUsed: TwinEvidence[];
   evidenceBundle: TwinEvidenceBundle;
+  /** Structured, visible reasoning for open-ended decision-support questions. */
+  identityReasoning?: IdentityReasoningResult;
   pipeline: TwinPipelineStage[];
   generatedAt: string;
 };

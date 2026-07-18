@@ -36,7 +36,9 @@ const initialPipeline: TwinPipelineStage[] = [
   { id: "genome", label: "Genome retrieval", detail: "Scopes the current versioned Identity Genome.", status: "pending" },
   { id: "evidence", label: "Evidence selection", detail: "Retains only explainable evidence objects.", status: "pending" },
   { id: "knowledge", label: "Knowledge correlation", detail: "Keeps knowledge objects structured and traceable.", status: "pending" },
-  { id: "reasoning", label: "Evidence-bound reasoning", detail: "Rejects unsupported personal inference.", status: "pending" },
+  { id: "reasoning", label: "Reasoning Graph construction", detail: "Connects only selected evidence and deterministic signals.", status: "pending" },
+  { id: "decision", label: "Decision Engine", detail: "Keeps the recommendation bounded by supporting and missing evidence.", status: "pending" },
+  { id: "confidence", label: "Confidence estimation", detail: "Measures evidence relevance and coverage, not certainty about the future.", status: "pending" },
   { id: "answer", label: "Response assembly", detail: "Shows answer, confidence, evidence, and limitations.", status: "pending" },
 ];
 
