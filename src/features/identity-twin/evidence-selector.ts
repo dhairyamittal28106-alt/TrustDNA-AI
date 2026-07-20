@@ -1,4 +1,5 @@
 import type { GenomeSection, KnowledgeObject } from "@/features/identity-intelligence/types";
+import { mergeEvidence } from "@/features/identity-intelligence/evidence-merge";
 import { deduplicateById } from "@/features/identity-knowledge/knowledge-integrity";
 import type { TwinEvidence, TwinEvidenceBundle, TwinIntent, TwinRetrievedGenome } from "@/features/identity-twin/types";
 
@@ -21,12 +22,12 @@ function toEvidence(item: KnowledgeObject): TwinEvidence {
 export class EvidenceSelector {
   select(intent: TwinIntent, retrieved: TwinRetrievedGenome): TwinEvidenceBundle {
     const sections = deduplicateById(retrieved.sections.filter(isExplainable), "Twin evidence section selection");
-    const knowledgeObjects = deduplicateById(retrieved.knowledgeObjects.filter(isExplainable), "Twin evidence selection");
-    const evidence = deduplicateById(knowledgeObjects.map(toEvidence), "Twin evidence conversion");
+    const knowledgeObjects = mergeEvidence("selectedEvidence", retrieved.knowledgeObjects.filter(isExplainable));
+    const evidence = mergeEvidence("displayEvidence", knowledgeObjects.map(toEvidence));
 
     return {
       intent,
-      evidence,
+      evidence: mergeEvidence("selectedEvidence", evidence),
       sections,
       knowledgeObjects,
       // Timeline entries are displayed as existing Genome references only. They are

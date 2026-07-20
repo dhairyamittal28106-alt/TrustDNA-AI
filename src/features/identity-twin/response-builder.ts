@@ -2,6 +2,7 @@ import type { HybridAdvice, TwinEvidenceBundle, TwinIntent, TwinPipelineStage, T
 import type { TwinReasoning } from "@/features/identity-twin/types";
 import type { IdentityReasoningResult } from "@/features/identity-reasoning/types";
 import { deduplicateById } from "@/features/identity-knowledge/knowledge-integrity";
+import { mergeEvidence } from "@/features/identity-intelligence/evidence-merge";
 
 const pipelineLabels: Array<Pick<TwinPipelineStage, "id" | "label">> = [
   { id: "question", label: "Question received" },
@@ -19,7 +20,7 @@ export class TwinResponseBuilder {
   build(question: string, intent: TwinIntent, bundle: TwinEvidenceBundle, reasoning: TwinReasoning, identityReasoning?: IdentityReasoningResult, hybridAdvice?: HybridAdvice): TwinResponse {
     const deduplicatedBundle: TwinEvidenceBundle = {
       ...bundle,
-      evidence: deduplicateById(bundle.evidence, "Twin response evidence"),
+      evidence: mergeEvidence("displayEvidence", bundle.evidence),
       sections: deduplicateById(bundle.sections, "Twin response sections"),
       knowledgeObjects: deduplicateById(bundle.knowledgeObjects, "Twin response knowledge objects"),
       timeline: deduplicateById(bundle.timeline, "Twin response timeline"),
@@ -31,6 +32,10 @@ export class TwinResponseBuilder {
       status: "complete" as const,
       detail: this.detailFor(stage.id, intent, evidenceCount, deduplicatedBundle.version),
     }));
+
+    const auditTrail = identityReasoning
+      ? { ...identityReasoning, evidence: mergeEvidence("auditTrail", identityReasoning.evidence) }
+      : undefined;
 
     return {
       id: `twin-${Date.now()}`,
@@ -44,7 +49,7 @@ export class TwinResponseBuilder {
       reasoningSummary: reasoning.reasoningSummary,
       limitations: reasoning.limitations,
       suggestedSources: reasoning.suggestedSources,
-      identityReasoning,
+      identityReasoning: auditTrail,
       hybridAdvice,
       pipeline,
       generatedAt: new Date().toISOString(),

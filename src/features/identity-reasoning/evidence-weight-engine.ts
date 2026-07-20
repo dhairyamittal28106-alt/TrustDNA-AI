@@ -1,4 +1,5 @@
 import type { IdentityDimension, IdentityReasoningIntent, ReasoningContext, ReasoningEvidence } from "@/features/identity-reasoning/types";
+import { mergeEvidence } from "@/features/identity-intelligence/evidence-merge";
 
 const relevance: Record<IdentityReasoningIntent, Partial<Record<IdentityDimension["id"], number>>> = {
   identity_summary: { identity: .55, goals: .8, dreams: .8, career: .75, education: .65, projects: .85, skills: .8, frameworks: .65, interests: .55, values: .7, motivations: .75, strengths: .75, communication: .45, behavior_patterns: .7, learning_style: .55, decision_style: .55, risk_tolerance: .4, ownership_preference: .65 },
@@ -27,7 +28,8 @@ export class EvidenceWeightEngine {
       const matching = selected.filter((item) => pattern.evidenceIds.some((id) => item.evidenceIds.includes(id)));
       matching.forEach((item) => { item.weight = Math.max(item.weight, Math.min(1, item.weight + .05)); });
     }
-    return selected.sort((left, right) => right.weight - left.weight || right.confidence - left.confidence);
+    return mergeEvidence("reasoningEvidence", selected)
+      .sort((left, right) => right.weight - left.weight || right.confidence - left.confidence);
   }
 
   private toEvidence(dimension: IdentityDimension, relevanceWeight: number): ReasoningEvidence | null {

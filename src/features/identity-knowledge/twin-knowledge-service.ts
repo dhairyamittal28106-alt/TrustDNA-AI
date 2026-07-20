@@ -1,4 +1,5 @@
 import type { GenomeSnapshot } from "@/features/identity-intelligence/types";
+import { mergeEvidence } from "@/features/identity-intelligence/evidence-merge";
 import { classifyKnowledgeRetrievalIntent, KnowledgeRetriever, type KnowledgeRetrievalIntent } from "@/features/identity-knowledge/knowledge-retriever";
 import type { IdentityKnowledgeObject } from "@/features/identity-knowledge/types";
 import type { TwinEvidence, TwinReasoning } from "@/features/identity-twin/types";
@@ -17,7 +18,7 @@ export class TwinKnowledgeService {
     const facts = this.retriever.retrieve(question, snapshot.knowledgeHistory);
     if (!facts.length) return null;
 
-    const evidence = facts.map(toEvidence);
+    const evidence = mergeEvidence("selectedEvidence", facts.map(toEvidence));
     const answer = renderAnswer(question, facts);
     const confidence = Math.round((facts.reduce((total, fact) => total + fact.provenance.confidence, 0) / facts.length) * 100);
     return {

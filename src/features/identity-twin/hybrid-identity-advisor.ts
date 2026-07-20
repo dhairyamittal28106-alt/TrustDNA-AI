@@ -1,4 +1,5 @@
 import { IdentityProfileAggregator } from "@/features/identity-reasoning/identity-profile-aggregator";
+import { mergeEvidence } from "@/features/identity-intelligence/evidence-merge";
 import type { IdentityDimension, IdentityDimensionId } from "@/features/identity-reasoning/types";
 import type { GenomeSnapshot } from "@/features/identity-intelligence/types";
 import type { HybridAdvice, TwinEvidence } from "@/features/identity-twin/types";
@@ -39,7 +40,7 @@ export class HybridIdentityAdvisor {
     const guide = guides[topic];
     const profile = this.profileAggregator.aggregate(snapshot);
     const dimensions = selectDimensions(profile.dimensions, guide.relevantDimensions);
-    const evidence = dimensions.map(toEvidence);
+    const evidence = mergeEvidence("advisorEvidence", dimensions.map(toEvidence));
     const identityEntries = dimensions.map((dimension) => ({ label: dimension.label, value: dimension.value }));
     const identityContext = identityEntries.length
       ? `The current Identity Genome contains direct, versioned context for ${identityEntries.map((entry) => entry.label.toLocaleLowerCase()).join(", ")}.`

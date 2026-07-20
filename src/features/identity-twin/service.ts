@@ -6,6 +6,7 @@ import { IntentDetector } from "@/features/identity-twin/intent-detector";
 import { ReasoningEngine } from "@/features/identity-twin/reasoning-engine";
 import { TwinResponseBuilder } from "@/features/identity-twin/response-builder";
 import { TwinKnowledgeService } from "@/features/identity-knowledge/twin-knowledge-service";
+import { mergeEvidence } from "@/features/identity-intelligence/evidence-merge";
 import type { GenomeSnapshot } from "@/features/identity-intelligence/types";
 import type { TwinEvidence, TwinResponse } from "@/features/identity-twin/types";
 import type { IdentityReasoningResult, ReasoningEvidence } from "@/features/identity-reasoning/types";
@@ -57,7 +58,7 @@ export class IdentityTwinService {
       if (knowledgeAnswer) {
         return this.responseBuilder.build(question, "identity_facts", {
           intent: "identity_facts",
-          evidence: knowledgeAnswer.evidence,
+          evidence: mergeEvidence("selectedEvidence", knowledgeAnswer.evidence),
           sections: snapshot.sections.filter((section) => section.id === "identity-facts"),
           knowledgeObjects: snapshot.knowledgeObjects.filter((object) => knowledgeAnswer.evidence.some((evidence) => evidence.id === object.id)),
           timeline: snapshot.timeline,
@@ -111,10 +112,11 @@ function emptyBundle(snapshot: GenomeSnapshot, intent: "prediction_boundary") {
 }
 
 function hybridBundle(snapshot: GenomeSnapshot, evidence: TwinEvidence[]) {
-  const usesCommunication = evidence.some((item) => item.category === "communication");
+  const advisorEvidence = mergeEvidence("advisorEvidence", evidence);
+  const usesCommunication = advisorEvidence.some((item) => item.category === "communication");
   return {
     intent: "hybrid_advice" as const,
-    evidence,
+    evidence: advisorEvidence,
     sections: snapshot.sections.filter((section) => section.id === "identity-facts" || usesCommunication && section.id === "communication"),
     knowledgeObjects: [],
     timeline: snapshot.timeline,
@@ -143,13 +145,14 @@ function predictionSubject(question: string): string {
 }
 
 function reasoningBundle(snapshot: GenomeSnapshot, reasoning: IdentityReasoningResult) {
-  const evidence = reasoning.evidence.map(toTwinEvidence);
+  const auditTrail = mergeEvidence("auditTrail", reasoning.evidence);
+  const evidence = mergeEvidence("displayEvidence", auditTrail.map(toTwinEvidence));
   const includesCommunication = reasoning.dimensions.some((dimension) => dimension.id === "communication");
   return {
     intent: "identity_reasoning" as const,
     evidence,
     sections: snapshot.sections.filter((section) => section.id === "identity-facts" || includesCommunication && section.id === "communication"),
-    knowledgeObjects: snapshot.knowledgeObjects.filter((object) => reasoning.evidence.some((item) => item.id === object.id)),
+    knowledgeObjects: mergeEvidence("auditTrail", snapshot.knowledgeObjects.filter((object) => auditTrail.some((item) => item.id === object.id))),
     timeline: snapshot.timeline,
     sources: snapshot.sources.filter((source) => source.status === "ingested"),
     version: snapshot.latestVersion?.version,

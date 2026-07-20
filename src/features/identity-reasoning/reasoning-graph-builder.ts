@@ -1,8 +1,10 @@
 import type { BehaviorPattern, IdentityDecision, IdentityDimension, ReasoningEvidence, ReasoningGraph } from "@/features/identity-reasoning/types";
+import { mergeEvidence } from "@/features/identity-intelligence/evidence-merge";
 
 /** Builds a visible, serializable explanation graph rather than retaining hidden reasoning. */
 export class ReasoningGraphBuilder {
   build(question: string, dimensions: IdentityDimension[], patterns: BehaviorPattern[], evidence: ReasoningEvidence[], decision: IdentityDecision): ReasoningGraph {
+    const auditTrail = mergeEvidence("auditTrail", evidence);
     const questionId = "question";
     const decisionId = "decision";
     const nodes: ReasoningGraph["nodes"] = [
@@ -11,24 +13,24 @@ export class ReasoningGraphBuilder {
     ];
     const edges: ReasoningGraph["edges"] = [{ from: questionId, to: decisionId, relationship: "informs" }];
 
-    dimensions.filter((dimension) => evidence.some((item) => item.category === dimension.id)).forEach((dimension) => {
+    dimensions.filter((dimension) => auditTrail.some((item) => item.category === dimension.id)).forEach((dimension) => {
       const dimensionId = `dimension-${dimension.id}`;
       nodes.push({ id: dimensionId, label: dimension.label, kind: "dimension" });
       edges.push({ from: questionId, to: dimensionId, relationship: "uses" });
       edges.push({ from: dimensionId, to: decisionId, relationship: "informs" });
     });
 
-    evidence.forEach((item) => {
+    auditTrail.forEach((item) => {
       const evidenceId = `evidence-${item.id}`;
       nodes.push({ id: evidenceId, label: item.title, kind: "evidence" });
       edges.push({ from: evidenceId, to: `dimension-${item.category}`, relationship: "supports" });
     });
 
-    patterns.filter((pattern) => pattern.evidenceIds.some((id) => evidence.some((item) => item.evidenceIds.includes(id)))).forEach((pattern) => {
+    patterns.filter((pattern) => pattern.evidenceIds.some((id) => auditTrail.some((item) => item.evidenceIds.includes(id)))).forEach((pattern) => {
       const patternId = `behavior-${pattern.id}`;
       nodes.push({ id: patternId, label: pattern.label, kind: "behavior" });
       edges.push({ from: patternId, to: decisionId, relationship: "informs" });
-      evidence
+      auditTrail
         .filter((item) => item.evidenceIds.some((evidenceId) => pattern.evidenceIds.includes(evidenceId)))
         .forEach((item) => edges.push({ from: `evidence-${item.id}`, to: patternId, relationship: "supports" }));
     });

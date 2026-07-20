@@ -6,6 +6,7 @@ import { ReasoningContextBuilder } from "@/features/identity-reasoning/reasoning
 import { ReasoningExplanationService } from "@/features/identity-reasoning/reasoning-explanation-service";
 import { ReasoningGraphBuilder } from "@/features/identity-reasoning/reasoning-graph-builder";
 import { RecommendationEngine } from "@/features/identity-reasoning/recommendation-engine";
+import { mergeEvidence } from "@/features/identity-intelligence/evidence-merge";
 import type { IdentityReasoningIntent, IdentityReasoningResult } from "@/features/identity-reasoning/types";
 import type { GenomeSnapshot } from "@/features/identity-intelligence/types";
 
@@ -26,7 +27,7 @@ export class IdentityReasoningEngine {
     const intent = classifyIdentityReasoningIntent(question);
     const profile = this.profileAggregator.aggregate(snapshot);
     const context = this.contextBuilder.build(question, intent, profile);
-    const evidence = this.evidenceWeights.select(context);
+    const evidence = mergeEvidence("auditTrail", this.evidenceWeights.select(context));
     const dimensions = context.dimensions.filter((dimension) => evidence.some((item) => item.category === dimension.id));
     const visiblePatterns = context.behaviorSignals.filter((pattern) => pattern.evidenceIds.some((id) => evidence.some((item) => item.evidenceIds.includes(id))));
     const decision = this.recommendations.build(this.decisionEngine.decide({ ...context, dimensions, behaviorSignals: visiblePatterns, evidence }));
