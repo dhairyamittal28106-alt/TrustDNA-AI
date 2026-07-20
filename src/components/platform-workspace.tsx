@@ -4,6 +4,7 @@ import { PlatformShell } from "@/components/platform-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CommandCenterDashboard } from "@/features/dashboard/components/command-center-dashboard";
+import { AnalystWorkspace } from "@/features/analyst/components/analyst-workspace";
 import { GmailConnectionCard } from "@/features/gmail/components/gmail-connection-card";
 import { GmailSyncWorkspace } from "@/features/gmail/components/gmail-sync-workspace";
 import { IdentityIntelligenceWorkspace } from "@/features/identity-intelligence/components/identity-intelligence-workspace";
@@ -11,10 +12,10 @@ import { IdentityTwinWorkspace } from "@/features/identity-twin/components/ident
 import { InvestigationWorkspace } from "@/features/investigation/components/investigation-workspace";
 import { LiveInvestigationWorkspace } from "@/features/live-investigation/components/live-investigation-workspace";
 
-export const platformSections = ["dashboard", "genome", "gmail", "twin", "investigate", "live-investigation", "investigations", "cases", "certificates", "reports", "profile", "settings"] as const;
+export const platformSections = ["dashboard", "genome", "gmail", "twin", "analyst", "investigate", "live-investigation", "investigations", "cases", "certificates", "reports", "profile", "settings"] as const;
 export type PlatformSection = typeof platformSections[number];
 
-const sectionCopy: Record<Exclude<PlatformSection, "dashboard" | "genome" | "gmail" | "twin" | "investigate" | "live-investigation" | "settings">, { eyebrow: string; title: string; body: string; icon: LucideIcon; action: string; actionHref: string }> = {
+const sectionCopy: Record<Exclude<PlatformSection, "dashboard" | "genome" | "gmail" | "twin" | "analyst" | "investigate" | "live-investigation" | "settings">, { eyebrow: string; title: string; body: string; icon: LucideIcon; action: string; actionHref: string }> = {
   investigations: { eyebrow: "INVESTIGATIONS", title: "Open a new evidence-backed investigation.", body: "Bring a suspicious artifact to TrustDNA and let specialized investigators turn signals into an explainable decision.", icon: ShieldAlert, action: "Start an investigation", actionHref: "/investigate" },
   cases: { eyebrow: "CASE FILES", title: "Your resolved cases belong in one place.", body: "Review the full evidence trail, final verdict, and recommended actions for every investigation.", icon: FileText, action: "Open an investigation", actionHref: "/investigate" },
   certificates: { eyebrow: "CERTIFICATES", title: "Portable trust credentials, backed by evidence.", body: "TrustDNA Certificates make an Identity Genome’s trust posture clear, shareable, and verifiable.", icon: BadgeCheck, action: "Start an investigation", actionHref: "/investigate" },
@@ -27,6 +28,7 @@ export function PlatformWorkspace({ section }: { section: PlatformSection }) {
   if (section === "genome") return <PlatformShell active="genome"><IdentityIntelligenceWorkspace /></PlatformShell>;
   if (section === "gmail") return <PlatformShell active="gmail"><GmailSyncWorkspace /></PlatformShell>;
   if (section === "twin") return <PlatformShell active="twin"><IdentityTwinWorkspace /></PlatformShell>;
+  if (section === "analyst") return <PlatformShell active="analyst"><AnalystWorkspace /></PlatformShell>;
   if (section === "investigate") return <PlatformShell active="investigate"><InvestigationWorkspace /></PlatformShell>;
   if (section === "live-investigation") return <PlatformShell active="live-investigation"><LiveInvestigationWorkspace /></PlatformShell>;
   if (section === "settings") return <SettingsWorkspace />;
