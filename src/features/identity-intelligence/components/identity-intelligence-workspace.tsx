@@ -7,6 +7,7 @@ import { IdentityGenomeHologram } from "@/components/identity-genome-hologram";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth-provider";
 import { buildGenomeSnapshot, emptyGenomeSnapshot } from "@/features/identity-intelligence/adapter";
+import { buildGenomeHologramSignals } from "@/features/identity-intelligence/hologram-signals";
 import { ingestTextIntelligence, IntelligenceApiError, loadGenomeIntelligence } from "@/features/identity-intelligence/api";
 import { GenomeInsights } from "@/features/identity-intelligence/components/genome-insights";
 import { GenomeTraitSection } from "@/features/identity-intelligence/components/genome-trait-section";
@@ -164,11 +165,16 @@ export function IdentityIntelligenceWorkspace() {
     ? "TrustDNA is showing only the communication evidence it can explain and trace."
     : "Start with a consented text source. TrustDNA will build an explainable foundation—without inventing facts about you.";
 
+  const hologramSignals = buildGenomeHologramSignals(snapshot);
+  function focusGenomeEvidence() {
+    document.getElementById("identity-facts-heading")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+  }
+
   return <section className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-10"><motion.div initial={{ opacity: 0, y: reduceMotion ? 0 : 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.38 }} className="flex flex-wrap items-end justify-between gap-5"><div><p className="font-mono text-[11px] tracking-[.17em] text-[#aea3ff]">IDENTITY INTELLIGENCE ENGINE</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-white md:text-4xl">{heading}</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">{subheading}</p></div><Button onClick={scrollToSourceManager} className="h-11 rounded-xl bg-[#8b78f6] text-white hover:bg-[#9c8aff]"><Fingerprint className="size-4" />Add a source <ArrowDown className="size-4" /></Button></motion.div>
 
     {error && <div role="status" className="mt-6 flex items-start gap-3 rounded-2xl border border-amber-200/15 bg-amber-200/[.06] p-4 text-sm text-amber-50"><CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-amber-200" /><div><p className="font-medium">Identity intelligence needs your attention</p><p className="mt-1 text-xs leading-5 text-amber-100/75">{error}</p></div></div>}
 
-    <motion.div initial={{ opacity: 0, y: reduceMotion ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduceMotion ? 0 : 0.08, duration: reduceMotion ? 0 : 0.42 }} className="mt-8 grid gap-5 xl:grid-cols-[.78fr_1.22fr]"><IdentityGenomeHologram phase={busy ? "genesis" : snapshot.hasExtractedKnowledge ? "sentinel" : "genome_creation"} identityLabel={user?.displayName ?? "Your Identity Genome"} trustRating={snapshot.hasExtractedKnowledge ? "Evidence-led" : "Pending"} genomeVersion={snapshot.latestVersion?.version} confidence={snapshot.genomeConfidence} status={busy ? "Evolving" : snapshot.hasExtractedKnowledge ? "Evidence linked" : "Awaiting source"} currentState={busy ? "Guardian is integrating new consented evidence" : evolution.latest?.guardianInsight.observation ?? "Guardian ready for its first supported source"} /><IdentityMap snapshot={snapshot} /></motion.div>
+    <motion.div initial={{ opacity: 0, y: reduceMotion ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduceMotion ? 0 : 0.08, duration: reduceMotion ? 0 : 0.42 }} className="mt-8 grid gap-5 xl:grid-cols-[.78fr_1.22fr]"><IdentityGenomeHologram phase={busy ? "genesis" : snapshot.hasExtractedKnowledge ? "sentinel" : "genome_creation"} identityLabel={user?.displayName ?? "Your Identity Genome"} trustRating={snapshot.hasExtractedKnowledge ? "Evidence-led" : "Pending"} genomeVersion={snapshot.latestVersion?.version} confidence={snapshot.genomeConfidence} status={busy ? "Evolving" : snapshot.hasExtractedKnowledge ? "Evidence linked" : "Awaiting source"} currentState={busy ? "Guardian is integrating new consented evidence" : evolution.latest?.guardianInsight.observation ?? "Guardian ready for its first supported source"} signals={hologramSignals} onSignalFocus={focusGenomeEvidence} /><IdentityMap snapshot={snapshot} /></motion.div>
 
     <div className="mt-5"><SourceManager onIngest={ingestSource} busy={busy} /></div>
     <div className="mt-5"><GmailConnectionCard /></div>

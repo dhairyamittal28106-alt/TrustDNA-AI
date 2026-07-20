@@ -104,6 +104,13 @@
 .hologram-evidence { animation: hologram-evidence 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 .hologram-glitch { animation: hologram-glitch 2.9s steps(2, end) infinite; }
 
+.hologram-neural-grid { background-image: linear-gradient(rgb(125 232 255 / 6%) 1px, transparent 1px), linear-gradient(90deg, rgb(125 232 255 / 6%) 1px, transparent 1px); background-size: 22px 22px; mask-image: radial-gradient(circle at center, black 12%, transparent 74%); animation: hologram-grid-drift 18s linear infinite; }
+.hologram-genome-pulse { animation: hologram-genome-pulse 5.8s ease-out infinite; }
+.digital-brain-search { animation: digital-brain-search 2.7s ease-out infinite; }
+@keyframes hologram-grid-drift { to { background-position: 44px 44px; } }
+@keyframes hologram-genome-pulse { 0%, 72%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(.5); } 80% { opacity: .62; } 96% { opacity: 0; transform: translate(-50%, -50%) scale(5.4); } }
+@keyframes digital-brain-search { 0%, 100% { opacity: .05; transform: translate(-50%, -50%) scale(.5); } 42% { opacity: .68; } 72% { opacity: 0; transform: translate(-50%, -50%) scale(5.8); } }
+
 @media (prefers-reduced-motion: reduce) {
   .hologram-float,
   .hologram-ring,
@@ -113,5 +120,8 @@
   .hologram-eye-pulse,
   .hologram-orbit,
   .hologram-evidence,
-  .hologram-glitch { animation: none !important; }
+  .hologram-glitch,
+  .hologram-neural-grid,
+  .hologram-genome-pulse,
+  .digital-brain-search { animation: none !important; }
 }
