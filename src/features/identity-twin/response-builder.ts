@@ -1,4 +1,5 @@
 import type { HybridAdvice, TwinEvidenceBundle, TwinIntent, TwinPipelineStage, TwinResponse } from "@/features/identity-twin/types";
+import type { FourLayerResponse } from "@/features/identity-twin/four-layer-response-composer";
 import type { TwinReasoning } from "@/features/identity-twin/types";
 import type { IdentityReasoningResult } from "@/features/identity-reasoning/types";
 import { deduplicateById } from "@/features/identity-knowledge/knowledge-integrity";
@@ -17,7 +18,7 @@ const pipelineLabels: Array<Pick<TwinPipelineStage, "id" | "label">> = [
 ];
 
 export class TwinResponseBuilder {
-  build(question: string, intent: TwinIntent, bundle: TwinEvidenceBundle, reasoning: TwinReasoning, identityReasoning?: IdentityReasoningResult, hybridAdvice?: HybridAdvice): TwinResponse {
+  build(question: string, intent: TwinIntent, bundle: TwinEvidenceBundle, reasoning: TwinReasoning, identityReasoning?: IdentityReasoningResult, hybridAdvice?: HybridAdvice, fourLayerResponse?: FourLayerResponse): TwinResponse {
     const deduplicatedBundle: TwinEvidenceBundle = {
       ...bundle,
       evidence: mergeEvidence("displayEvidence", bundle.evidence),
@@ -30,7 +31,7 @@ export class TwinResponseBuilder {
     const pipeline = pipelineLabels.map((stage) => ({
       ...stage,
       status: "complete" as const,
-      detail: this.detailFor(stage.id, intent, evidenceCount, deduplicatedBundle.version),
+      detail: this.detailFor(stage.id, intent, evidenceCount, deduplicatedBundle.version, fourLayerResponse),
     }));
 
     const auditTrail = identityReasoning
@@ -51,21 +52,23 @@ export class TwinResponseBuilder {
       suggestedSources: reasoning.suggestedSources,
       identityReasoning: auditTrail,
       hybridAdvice,
+      responseLayers: fourLayerResponse?.layers,
+      reasoningTrace: fourLayerResponse?.trace,
       pipeline,
       generatedAt: new Date().toISOString(),
     };
   }
 
-  private detailFor(stage: TwinPipelineStage["id"], intent: TwinIntent, evidenceCount: number, version?: string): string {
+  private detailFor(stage: TwinPipelineStage["id"], intent: TwinIntent, evidenceCount: number, version?: string, fourLayerResponse?: FourLayerResponse): string {
     switch (stage) {
       case "question": return "User question is kept local to this evidence-bound response.";
-      case "intent": return `Mapped to ${intent.replaceAll("_", " ")}.`;
+      case "intent": return fourLayerResponse ? `Classified as ${fourLayerResponse.trace.questionType.replaceAll("_", " ")} and selected ${fourLayerResponse.trace.pipeline.replaceAll("_", " ")}.` : `Mapped to ${intent.replaceAll("_", " ")}.`;
       case "genome": return version ? `Using Identity Genome ${version}.` : "No versioned Genome is available yet.";
       case "evidence": return evidenceCount ? `${evidenceCount} explainable evidence item${evidenceCount === 1 ? "" : "s"} selected.` : "No relevant evidence selected.";
       case "knowledge": return evidenceCount ? "Only source-linked knowledge objects were retained." : "No knowledge objects support this conclusion.";
       case "reasoning": return intent === "identity_reasoning" ? "Connected selected dimensions, evidence, and deterministic behavior signals." : intent === "hybrid_advice" ? "Kept Identity Evidence separate from deterministic general guidance." : "No external model or ungrounded personal inference was used.";
       case "decision": return intent === "identity_reasoning" ? "Applied deterministic rules with a recommendation, alternative view, and evidence gaps." : intent === "hybrid_advice" ? "Prepared an alignment checklist without making a personal prediction." : "No decision engine applies to this evidence scope.";
-      case "confidence": return intent === "identity_reasoning" ? "Calculated from evidence relevance, confidence, coverage, and category diversity." : intent === "hybrid_advice" ? "Measures the coverage of Identity Evidence, not the correctness of life advice." : "Confidence remains inside the available evidence boundary.";
+      case "confidence": return fourLayerResponse ? fourLayerResponse.trace.confidenceDrivers[0] ?? "Confidence remains inside the available evidence boundary." : intent === "identity_reasoning" ? "Calculated from evidence relevance, confidence, coverage, and category diversity." : intent === "hybrid_advice" ? "Measures the coverage of Identity Evidence, not the correctness of life advice." : "Confidence remains inside the available evidence boundary.";
       case "answer": return evidenceCount ? "Response includes evidence, confidence, and limitations." : "Response clearly marks the gap as unknown.";
     }
   }

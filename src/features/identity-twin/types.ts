@@ -20,6 +20,50 @@ export type TwinIntent =
   | "prediction_boundary"
   | "unknown";
 
+/** Semantic question categories used by the Unified Cognitive Orchestrator. */
+export type TwinQuestionType =
+  | "identity_facts"
+  | "identity_summary"
+  | "decision_support"
+  | "explanation"
+  | "meta"
+  | "comparison"
+  | "boundary"
+  | "communication"
+  | "observed_knowledge"
+  | "general_guidance";
+
+export type TwinPipelineName =
+  | "direct_knowledge"
+  | "profile_aggregation"
+  | "identity_reasoning"
+  | "evidence_explanation"
+  | "genome_meta"
+  | "evidence_comparison"
+  | "safety_boundary"
+  | "evidence_informed_guidance"
+  | "communication_analysis"
+  | "observed_knowledge";
+
+export type TwinResponseLayer = {
+  id: "identity_evidence" | "identity_alignment" | "general_guidance" | "persona_simulation";
+  label: string;
+  content: string;
+  evidenceIds: string[];
+};
+
+/** Visible, non-chain-of-thought trace returned with every orchestrated answer. */
+export type TwinReasoningTrace = {
+  questionType: TwinQuestionType;
+  pipeline: TwinPipelineName;
+  evidenceSources: string[];
+  evidenceCount: number;
+  dimensionsUsed: string[];
+  missingEvidence: string[];
+  confidenceDrivers: string[];
+  ignoredEvidence: string[];
+};
+
 export type TwinGuardianState = "listening" | "thinking" | "reasoning" | "answer_ready";
 
 export type TwinPipelineStageId =
@@ -113,6 +157,10 @@ export type TwinResponse = TwinReasoning & {
   identityReasoning?: IdentityReasoningResult;
   /** Deterministic advice with explicit evidence and general-knowledge boundaries. */
   hybridAdvice?: HybridAdvice;
+  /** The four evidence-precedence layers, safe to render without hidden reasoning. */
+  responseLayers?: TwinResponseLayer[];
+  /** Explainable orchestration metadata for audit and trace views. */
+  reasoningTrace?: TwinReasoningTrace;
   pipeline: TwinPipelineStage[];
   generatedAt: string;
 };

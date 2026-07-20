@@ -1,104 +1,117 @@
 import { EvidenceSelector } from "@/features/identity-twin/evidence-selector";
-import { HybridIdentityAdvisor } from "@/features/identity-twin/hybrid-identity-advisor";
-import { IdentityReasoningEngine } from "@/features/identity-reasoning/identity-reasoning-engine";
+import { FourLayerResponseComposer } from "@/features/identity-twin/four-layer-response-composer";
 import { GenomeRetriever } from "@/features/identity-twin/genome-retriever";
-import { IntentDetector } from "@/features/identity-twin/intent-detector";
+import { HybridIdentityAdvisor } from "@/features/identity-twin/hybrid-identity-advisor";
+import { QuestionClassifier, type TwinQuestionRoute } from "@/features/identity-twin/question-classifier";
 import { ReasoningEngine } from "@/features/identity-twin/reasoning-engine";
 import { TwinResponseBuilder } from "@/features/identity-twin/response-builder";
+import { IdentityProfileAggregator } from "@/features/identity-reasoning/identity-profile-aggregator";
+import { IdentityReasoningEngine } from "@/features/identity-reasoning/identity-reasoning-engine";
 import { TwinKnowledgeService } from "@/features/identity-knowledge/twin-knowledge-service";
+import { deduplicateById } from "@/features/identity-knowledge/knowledge-integrity";
 import { mergeEvidence } from "@/features/identity-intelligence/evidence-merge";
 import type { GenomeSnapshot } from "@/features/identity-intelligence/types";
-import type { TwinEvidence, TwinResponse } from "@/features/identity-twin/types";
-import type { IdentityReasoningResult, ReasoningEvidence } from "@/features/identity-reasoning/types";
+import type { IdentityProfile, IdentityReasoningResult, ReasoningEvidence } from "@/features/identity-reasoning/types";
+import type { HybridAdvice, TwinEvidence, TwinEvidenceBundle, TwinIntent, TwinReasoning, TwinResponse } from "@/features/identity-twin/types";
 
-/** Routes every Twin question through a deterministic, evidence-bounded path. */
+/**
+ * Phase 22â€“23 orchestrator. It composes the existing retriever, reasoning
+ * engine, advisor, and direct-fact service through one explicit precedence
+ * order: Evidence -> Alignment -> General Guidance -> Persona -> Unknowns.
+ */
 export class IdentityTwinService {
   constructor(
-    private readonly intentDetector = new IntentDetector(),
+    private readonly classifier = new QuestionClassifier(),
     private readonly genomeRetriever = new GenomeRetriever(),
     private readonly evidenceSelector = new EvidenceSelector(),
-    private readonly reasoningEngine = new ReasoningEngine(),
-    private readonly identityReasoningEngine = new IdentityReasoningEngine(),
-    private readonly responseBuilder = new TwinResponseBuilder(),
+    private readonly directReasoning = new ReasoningEngine(),
+    private readonly identityReasoning = new IdentityReasoningEngine(),
+    private readonly profileAggregator = new IdentityProfileAggregator(),
     private readonly knowledgeService = new TwinKnowledgeService(),
     private readonly hybridAdvisor = new HybridIdentityAdvisor(),
+    private readonly composer = new FourLayerResponseComposer(),
+    private readonly responseBuilder = new TwinResponseBuilder(),
   ) {}
 
   answer(question: string, snapshot: GenomeSnapshot): TwinResponse {
-    const intent = this.intentDetector.detect(question);
+    const route = this.classifier.route(question);
+    const profile = this.profileAggregator.aggregate(snapshot);
 
-    if (intent === "prediction_boundary") {
-      return this.responseBuilder.build(question, intent, emptyBundle(snapshot, intent), predictionBoundary(question));
+    if (route.questionType === "boundary") {
+      return this.finalize(question, route, snapshot, emptyBundle(snapshot, route.intent), profile, boundaryReasoning(route));
     }
 
-    if (intent === "hybrid_advice") {
-      const hybrid = this.hybridAdvisor.advise(question, snapshot);
-      return this.responseBuilder.build(question, intent, hybridBundle(snapshot, hybrid.evidence), {
-        answer: "I prepared an evidence-bounded advisory response. The cards below keep your Identity Evidence, General Guidance, Alignment Analysis, and unknowns separate.",
-        confidence: hybrid.confidence,
-        reasoningSummary: [
-          "Classified this as Hybrid Advice before retrieving any direct facts.",
-          hybrid.evidence.length ? `Selected ${hybrid.evidence.length} relevant Identity Evidence dimension${hybrid.evidence.length === 1 ? "" : "s"}.` : "No relevant Identity Evidence was found, so the guidance remains general.",
-          "Kept static general guidance separate from the Identity Genome and did not make a prediction.",
-        ],
-        limitations: [
-          `Identity Evidence: ${hybrid.advice.evidenceBoundary.identityEvidence.join(" · ")}`,
-          `General Knowledge: ${hybrid.advice.evidenceBoundary.generalKnowledge}`,
-          `Unknown: ${hybrid.advice.evidenceBoundary.unknown.join(" · ")}`,
-        ],
-        suggestedSources: hybrid.advice.evidenceBoundary.unknown,
-      }, undefined, hybrid.advice);
-    }
-
-    // Direct fact lookup only runs after classification establishes a factual
-    // question. A life decision can therefore never be reduced to a career,
-    // value, or relationship fact merely because it contains a matching word.
-    if (intent === "identity_facts" || this.knowledgeService.intentFor(question) !== "unknown") {
+    if (route.questionType === "identity_facts") {
       const knowledgeAnswer = this.knowledgeService.answer(question, snapshot);
-      if (knowledgeAnswer) {
-        return this.responseBuilder.build(question, "identity_facts", {
-          intent: "identity_facts",
-          evidence: mergeEvidence("selectedEvidence", knowledgeAnswer.evidence),
-          sections: snapshot.sections.filter((section) => section.id === "identity-facts"),
-          knowledgeObjects: snapshot.knowledgeObjects.filter((object) => knowledgeAnswer.evidence.some((evidence) => evidence.id === object.id)),
-          timeline: snapshot.timeline,
-          sources: snapshot.sources.filter((source) => source.status === "ingested"),
-          version: snapshot.latestVersion?.version,
-          genomeConfidence: snapshot.genomeConfidence,
-        }, knowledgeAnswer.reasoning);
-      }
-
-      return this.responseBuilder.build(question, "identity_facts", {
-        intent: "identity_facts",
-        evidence: [],
-        sections: snapshot.sections.filter((section) => section.id === "identity-facts"),
-        knowledgeObjects: [],
-        timeline: snapshot.timeline,
-        sources: snapshot.sources.filter((source) => source.status === "ingested"),
-        version: snapshot.latestVersion?.version,
-        genomeConfidence: snapshot.genomeConfidence,
-      }, this.knowledgeService.unavailable(question));
+      const bundle = knowledgeAnswer
+        ? directKnowledgeBundle(snapshot, knowledgeAnswer.evidence)
+        : directKnowledgeBundle(snapshot, []);
+      return this.finalize(question, route, snapshot, bundle, profile, knowledgeAnswer?.reasoning ?? this.knowledgeService.unavailable(question));
     }
 
-    if (intent === "identity_reasoning") {
-      const identityReasoning = this.identityReasoningEngine.reason(question, snapshot);
-      return this.responseBuilder.build(question, intent, reasoningBundle(snapshot, identityReasoning), {
-        answer: `${identityReasoning.decision.summary}\n\nRecommendation: ${identityReasoning.decision.recommendation}\n\nAlternative view: ${identityReasoning.decision.alternativeView}`,
-        confidence: identityReasoning.confidence,
-        reasoningSummary: identityReasoning.reasoningSummary,
-        limitations: identityReasoning.limitations,
-        suggestedSources: identityReasoning.decision.missingEvidence,
-      }, identityReasoning);
+    if (route.questionType === "meta") {
+      const bundle = this.evidenceSelector.select("identity_summary", this.genomeRetriever.retrieve(snapshot, "identity_summary"));
+      return this.finalize(question, route, snapshot, bundle, profile, metaReasoning(snapshot, profile));
     }
 
-    const retrievedGenome = this.genomeRetriever.retrieve(snapshot, intent);
-    const evidence = this.evidenceSelector.select(intent, retrievedGenome);
-    const reasoning = this.reasoningEngine.reason(intent, evidence);
-    return this.responseBuilder.build(question, intent, evidence, reasoning);
+    if (route.questionType === "communication" || route.questionType === "observed_knowledge") {
+      const bundle = this.evidenceSelector.select(route.intent, this.genomeRetriever.retrieve(snapshot, route.intent));
+      return this.finalize(question, route, snapshot, bundle, profile, this.directReasoning.reason(route.intent, bundle));
+    }
+
+    if (route.intent === "artifact_comparison") {
+      return this.finalize(question, route, snapshot, emptyBundle(snapshot, route.intent), profile, artifactComparisonReasoning());
+    }
+
+    const reasoning = this.identityReasoning.reason(question, snapshot);
+    const needsGuidance = route.questionType === "decision_support" || route.questionType === "comparison" || route.questionType === "general_guidance";
+    const advised = needsGuidance ? this.hybridAdvisor.advise(question, snapshot) : undefined;
+    const bundle = combineBundles(
+      reasoningBundle(snapshot, reasoning),
+      advised ? hybridBundle(snapshot, advised.evidence) : undefined,
+    );
+    const baseReasoning = reasoningResponse(reasoning, advised);
+    return this.finalize(question, route, snapshot, bundle, profile, baseReasoning, reasoning, advised?.advice);
+  }
+
+  private finalize(question: string, route: TwinQuestionRoute, snapshot: GenomeSnapshot, bundle: TwinEvidenceBundle, profile: IdentityProfile, reasoning: TwinReasoning, identityReasoning?: IdentityReasoningResult, hybridAdvice?: HybridAdvice) {
+    const fourLayerResponse = this.composer.compose({
+      questionType: route.questionType,
+      pipeline: route.pipeline,
+      evidence: bundle.evidence,
+      profile,
+      reasoning,
+      identityReasoning,
+      hybridAdvice,
+      boundary: route.questionType === "boundary",
+      conflictingEvidence: findConflicts(snapshot, bundle.evidence),
+    });
+    return this.responseBuilder.build(
+      question,
+      route.intent,
+      bundle,
+      { ...reasoning, answer: fourLayerResponse.answer },
+      identityReasoning,
+      hybridAdvice,
+      fourLayerResponse,
+    );
   }
 }
 
-function emptyBundle(snapshot: GenomeSnapshot, intent: "prediction_boundary") {
+function directKnowledgeBundle(snapshot: GenomeSnapshot, evidence: TwinEvidence[]): TwinEvidenceBundle {
+  return {
+    intent: "identity_facts",
+    evidence: mergeEvidence("selectedEvidence", evidence),
+    sections: snapshot.sections.filter((section) => section.id === "identity-facts"),
+    knowledgeObjects: snapshot.knowledgeObjects.filter((object) => evidence.some((item) => item.id === object.id)),
+    timeline: snapshot.timeline,
+    sources: snapshot.sources.filter((source) => source.status === "ingested"),
+    version: snapshot.latestVersion?.version,
+    genomeConfidence: snapshot.genomeConfidence,
+  };
+}
+
+function emptyBundle(snapshot: GenomeSnapshot, intent: TwinIntent): TwinEvidenceBundle {
   return {
     intent,
     evidence: [],
@@ -111,13 +124,11 @@ function emptyBundle(snapshot: GenomeSnapshot, intent: "prediction_boundary") {
   };
 }
 
-function hybridBundle(snapshot: GenomeSnapshot, evidence: TwinEvidence[]) {
-  const advisorEvidence = mergeEvidence("advisorEvidence", evidence);
-  const usesCommunication = advisorEvidence.some((item) => item.category === "communication");
+function hybridBundle(snapshot: GenomeSnapshot, evidence: TwinEvidence[]): TwinEvidenceBundle {
   return {
-    intent: "hybrid_advice" as const,
-    evidence: advisorEvidence,
-    sections: snapshot.sections.filter((section) => section.id === "identity-facts" || usesCommunication && section.id === "communication"),
+    intent: "hybrid_advice",
+    evidence: mergeEvidence("advisorEvidence", evidence),
+    sections: snapshot.sections.filter((section) => section.id === "identity-facts" || section.id === "communication"),
     knowledgeObjects: [],
     timeline: snapshot.timeline,
     sources: snapshot.sources.filter((source) => source.status === "ingested"),
@@ -126,37 +137,31 @@ function hybridBundle(snapshot: GenomeSnapshot, evidence: TwinEvidence[]) {
   };
 }
 
-function predictionBoundary(question: string) {
-  return {
-    answer: `I can’t predict ${predictionSubject(question)}. TrustDNA can only work with evidence already present in your Identity Genome and cannot forecast personal outcomes.`,
-    confidence: null,
-    reasoningSummary: ["Classified this as an unknown future prediction.", "Did not retrieve unrelated Identity Evidence or generate a personal forecast."],
-    limitations: ["TrustDNA does not predict relationships, death, wealth, lottery outcomes, or future events."],
-    suggestedSources: [],
-  };
-}
-
-function predictionSubject(question: string): string {
-  if (/marry/i.test(question)) return "who you will marry";
-  if (/die|pass away/i.test(question)) return "when you will die";
-  if (/lottery/i.test(question)) return "lottery numbers";
-  if (/rich/i.test(question)) return "whether you will become rich";
-  return "your future";
-}
-
-function reasoningBundle(snapshot: GenomeSnapshot, reasoning: IdentityReasoningResult) {
+function reasoningBundle(snapshot: GenomeSnapshot, reasoning: IdentityReasoningResult): TwinEvidenceBundle {
   const auditTrail = mergeEvidence("auditTrail", reasoning.evidence);
   const evidence = mergeEvidence("displayEvidence", auditTrail.map(toTwinEvidence));
   const includesCommunication = reasoning.dimensions.some((dimension) => dimension.id === "communication");
   return {
-    intent: "identity_reasoning" as const,
+    intent: "identity_reasoning",
     evidence,
     sections: snapshot.sections.filter((section) => section.id === "identity-facts" || includesCommunication && section.id === "communication"),
-    knowledgeObjects: mergeEvidence("auditTrail", snapshot.knowledgeObjects.filter((object) => auditTrail.some((item) => item.id === object.id))),
+    knowledgeObjects: deduplicateById(snapshot.knowledgeObjects.filter((object) => auditTrail.some((item) => item.id === object.id)), "Unified Twin reasoning knowledge objects"),
     timeline: snapshot.timeline,
     sources: snapshot.sources.filter((source) => source.status === "ingested"),
     version: snapshot.latestVersion?.version,
     genomeConfidence: snapshot.genomeConfidence,
+  };
+}
+
+function combineBundles(primary: TwinEvidenceBundle, secondary?: TwinEvidenceBundle): TwinEvidenceBundle {
+  if (!secondary) return primary;
+  return {
+    ...primary,
+    evidence: mergeEvidence("selectedEvidence", primary.evidence, secondary.evidence),
+    sections: deduplicateById([...primary.sections, ...secondary.sections], "Unified Twin response sections"),
+    knowledgeObjects: deduplicateById([...primary.knowledgeObjects, ...secondary.knowledgeObjects], "Unified Twin response knowledge objects"),
+    timeline: deduplicateById([...primary.timeline, ...secondary.timeline], "Unified Twin response timeline"),
+    sources: deduplicateById([...primary.sources, ...secondary.sources], "Unified Twin response sources"),
   };
 }
 
@@ -170,4 +175,70 @@ function toTwinEvidence(item: ReasoningEvidence): TwinEvidence {
     sources: item.source.split(", ").filter(Boolean),
     updatedAt: item.timestamp === "Unknown" ? undefined : item.timestamp,
   };
+}
+
+function reasoningResponse(reasoning: IdentityReasoningResult, advised?: { advice: HybridAdvice; confidence: number | null }): TwinReasoning {
+  return {
+    answer: `${reasoning.decision.summary}\n\nRecommendation: ${reasoning.decision.recommendation}\n\nAlternative view: ${reasoning.decision.alternativeView}`,
+    confidence: reasoning.confidence ?? advised?.confidence ?? null,
+    reasoningSummary: [
+      ...reasoning.reasoningSummary,
+      advised ? "Evidence fusion retained Identity Evidence separately from general decision guidance." : "No general guidance was used outside the selected Identity Evidence pipeline.",
+    ],
+    limitations: reasoning.limitations,
+    suggestedSources: reasoning.decision.missingEvidence,
+  };
+}
+
+function metaReasoning(snapshot: GenomeSnapshot, profile: IdentityProfile): TwinReasoning {
+  const activeFacts = snapshot.knowledgeHistory.filter((fact) => fact.status === "active");
+  const missing = ["Additional source diversity", "Recent consented evidence", "Direct statements for any missing Identity dimensions"];
+  return {
+    answer: `The current Identity Genome contains ${activeFacts.length} active structured fact${activeFacts.length === 1 ? "" : "s"}, ${profile.dimensions.length} explainable profile dimension${profile.dimensions.length === 1 ? "" : "s"}, and ${snapshot.sourceCount} consented source record${snapshot.sourceCount === 1 ? "" : "s"}. This describes coverage, not a claim about unrecorded parts of your identity.`,
+    confidence: snapshot.genomeConfidence ?? null,
+    reasoningSummary: ["Read active structured Knowledge Objects and measured profile dimensions only.", "Reported Genome coverage and explicit gaps without inferring missing biography or personality."],
+    limitations: ["Coverage reflects only consented, currently loaded evidence."],
+    suggestedSources: missing,
+  };
+}
+
+function artifactComparisonReasoning(): TwinReasoning {
+  return {
+    answer: "I need the actual artifact text and a formal investigation before comparing it to your Identity Genome. I will not declare whether a message, document, or profile is yours from a question alone.",
+    confidence: null,
+    reasoningSummary: ["Classified this as an artifact comparison.", "Did not retrieve unrelated personal facts or simulate a forensic verdict."],
+    limitations: ["An artifact comparison needs the submitted content and relevant metadata."],
+    suggestedSources: ["The full artifact text", "Relevant metadata and timestamps", "A selected Identity Genome source for comparison"],
+  };
+}
+
+function boundaryReasoning(route: TwinQuestionRoute): TwinReasoning {
+  const messages = {
+    future: "I canâ€™t predict your future or claim certainty about relationships, death, wealth, or other outcomes. TrustDNA can only reason from recorded Identity Evidence.",
+    medical: "I canâ€™t diagnose conditions, recommend treatment, or infer medical information from an Identity Genome. For symptoms, medication, or care decisions, consult a qualified clinician.",
+    financial: "I canâ€™t provide personalized financial advice or infer your financial situation from an Identity Genome. Use current regulated information and a qualified adviser for material decisions.",
+    legal: "I canâ€™t provide legal advice or infer legal circumstances from an Identity Genome. Consult a qualified legal professional for jurisdiction-specific guidance.",
+    private: "I donâ€™t have or infer passwords, hidden memories, private messages, relationships, or other unrecorded personal facts.",
+  } as const;
+  return {
+    answer: messages[route.boundaryKind ?? "private"],
+    confidence: null,
+    reasoningSummary: [`Classified this as a ${route.boundaryKind ?? "private-information"} safety boundary.`, "Did not retrieve unrelated Identity Evidence or create a personal inference."],
+    limitations: ["TrustDNA cannot access hidden memories, private facts, or future outcomes."],
+    suggestedSources: [],
+  };
+}
+
+function findConflicts(snapshot: GenomeSnapshot, evidence: TwinEvidence[]) {
+  const selectedIds = new Set(evidence.map((item) => item.id));
+  const selectedFacts = snapshot.knowledgeHistory.filter((fact) => selectedIds.has(fact.id));
+  const byFactKey = new Map<string, string[]>();
+  for (const fact of selectedFacts) {
+    const values = byFactKey.get(fact.factKey) ?? [];
+    values.push(fact.value);
+    byFactKey.set(fact.factKey, values);
+  }
+  return Array.from(byFactKey.entries())
+    .filter(([, values]) => new Set(values).size > 1)
+    .map(([factKey, values]) => `${factKey.replaceAll("_", " ")} has recorded revisions: ${Array.from(new Set(values)).join(" → ")}`);
 }
