@@ -66,62 +66,63 @@
 .glass { background: linear-gradient(145deg, rgb(28 33 75 / 74%), rgb(12 15 40 / 63%)); box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), 0 20px 60px rgb(0 0 0 / 18%); }
 .grid-overlay { background-image: linear-gradient(rgb(145 155 255 / 4%) 1px, transparent 1px), linear-gradient(90deg, rgb(145 155 255 / 4%) 1px, transparent 1px); background-size: 36px 36px; }
 
-@keyframes hologram-float {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-7px) scale(1.012); }
-}
-
-@keyframes hologram-ring { to { transform: rotate(360deg); } }
-@keyframes hologram-ring-reverse { to { transform: rotate(-360deg); } }
-@keyframes hologram-scan { from { transform: translateY(0); } to { transform: translateY(540px); } }
-@keyframes hologram-particle {
-  0%, 100% { opacity: .2; transform: translateY(0); }
-  50% { opacity: .92; transform: translateY(-12px); }
-}
-@keyframes hologram-eye-pulse {
-  0%, 100% { opacity: .45; filter: drop-shadow(0 0 0 currentColor); }
-  50% { opacity: 1; filter: drop-shadow(0 0 8px currentColor); }
-}
-@keyframes hologram-evidence {
-  0%, 100% { opacity: .35; transform: scale(.94); }
-  50% { opacity: .96; transform: scale(1); }
-}
-@keyframes hologram-glitch {
-  0%, 88%, 100% { opacity: 0; transform: translateX(0); }
-  90% { opacity: .65; transform: translateX(8px); }
-  94% { opacity: .35; transform: translateX(-7px); }
-  97% { opacity: .8; transform: translateX(3px); }
-}
-
-.hologram-float { animation: hologram-float 5.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-.hologram-ring { animation: hologram-ring 18s linear infinite; transform-box: fill-box; transform-origin: center; }
-.hologram-ring-slow { animation-duration: 24s; }
-.hologram-ring-reverse { animation: hologram-ring-reverse 13s linear infinite; transform-box: fill-box; transform-origin: center; }
-.hologram-scan { animation: hologram-scan 2.9s linear infinite; }
-.hologram-particle { animation: hologram-particle 3.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-.hologram-eye-pulse { animation: hologram-eye-pulse 1.1s ease-in-out infinite; }
-.hologram-orbit { animation: hologram-ring 10s linear infinite; transform-box: fill-box; transform-origin: center; }
-.hologram-evidence { animation: hologram-evidence 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-.hologram-glitch { animation: hologram-glitch 2.9s steps(2, end) infinite; }
-
-.hologram-neural-grid { background-image: linear-gradient(rgb(125 232 255 / 6%) 1px, transparent 1px), linear-gradient(90deg, rgb(125 232 255 / 6%) 1px, transparent 1px); background-size: 22px 22px; mask-image: radial-gradient(circle at center, black 12%, transparent 74%); animation: hologram-grid-drift 18s linear infinite; }
-.hologram-genome-pulse { animation: hologram-genome-pulse 5.8s ease-out infinite; }
 .digital-brain-search { animation: digital-brain-search 2.7s ease-out infinite; }
-@keyframes hologram-grid-drift { to { background-position: 44px 44px; } }
-@keyframes hologram-genome-pulse { 0%, 72%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(.5); } 80% { opacity: .62; } 96% { opacity: 0; transform: translate(-50%, -50%) scale(5.4); } }
 @keyframes digital-brain-search { 0%, 100% { opacity: .05; transform: translate(-50%, -50%) scale(.5); } 42% { opacity: .68; } 72% { opacity: 0; transform: translate(-50%, -50%) scale(5.8); } }
 
+/* The flagship Genome visual uses transform/opacity-only loops to stay on the compositor. */
+.genome-hologram-shell { contain: paint; }
+.genome-depth-layer { pointer-events: none; }
+.genome-depth-layer-one { background: radial-gradient(circle at 15% 18%, rgb(76 119 255 / 14%), transparent 28%), radial-gradient(circle at 82% 80%, rgb(44 213 235 / 10%), transparent 30%); }
+.genome-depth-layer-two { background: linear-gradient(115deg, transparent 20%, rgb(158 238 255 / 3%), transparent 55%); animation: genome-depth-shift 18s ease-in-out infinite alternate; }
+.genome-neural-grid { background-image: linear-gradient(rgb(126 225 255 / 5%) 1px, transparent 1px), linear-gradient(90deg, rgb(126 225 255 / 5%) 1px, transparent 1px); background-size: 30px 30px; mask-image: radial-gradient(circle at 50% 42%, black 6%, transparent 73%); animation: genome-grid-drift 25s linear infinite; }
+.genome-ambient-particles { background-image: radial-gradient(circle at 16% 22%, rgb(201 251 255 / 44%) 0 1px, transparent 1.5px), radial-gradient(circle at 81% 28%, rgb(136 238 255 / 35%) 0 1px, transparent 1.6px), radial-gradient(circle at 74% 77%, rgb(203 250 255 / 25%) 0 1px, transparent 1.5px), radial-gradient(circle at 28% 79%, rgb(110 227 255 / 32%) 0 1px, transparent 1.5px); animation: genome-particle-drift 13s ease-in-out infinite alternate; }
+.genome-radial-motion { background: radial-gradient(ellipse at center, rgb(62 217 255 / 10%), transparent 49%); animation: genome-radial-breathe 7s ease-in-out infinite; }
+.genome-core { color: #a7f3ff; }
+.genome-core-ambient { background: radial-gradient(circle, rgb(59 220 255 / 22%) 0, rgb(53 146 255 / 10%) 37%, transparent 69%); filter: blur(13px); animation: genome-ambient-breathe 6.4s ease-in-out infinite; }
+.genome-core-pulse { animation: genome-pulse 6.2s ease-out infinite; }
+.genome-body-breathe { animation: genome-body-breathe 6.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.genome-dna-field { animation: genome-dna-rotate 32s linear infinite; transform-box: fill-box; transform-origin: center; }
+.genome-core-engaged .genome-dna-field { animation-duration: 12s; }
+.genome-scan-line { animation: genome-line-shimmer 4.3s ease-in-out infinite; }
+.genome-body-particle { animation: genome-body-particle 4.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.genome-neural-flash { stroke-dashoffset: 52; animation: genome-neural-flash 7.5s linear infinite; }
+.genome-neural-flash-1 { animation-delay: -2.3s; }
+.genome-neural-flash-2 { animation-delay: -4.7s; }
+.genome-scan-beam { animation: genome-scan 7.4s linear infinite; opacity: .24; }
+.genome-scan-beam-active { animation-duration: 3.2s; opacity: .82; }
+.genome-neural-link { fill: none; stroke: currentColor; stroke-width: .32; stroke-dasharray: 1.3 2.2; opacity: .12; }
+.genome-neural-link-active { animation: genome-link-flow 1.45s linear infinite; }
+.genome-live-dot { animation: genome-live-pulse 2.1s ease-in-out infinite; }
+
+@keyframes genome-depth-shift { to { transform: translate3d(3%, -2%, 0); opacity: .7; } }
+@keyframes genome-grid-drift { to { background-position: 60px 60px; } }
+@keyframes genome-particle-drift { to { transform: translate3d(0, -9px, 0); opacity: .68; } }
+@keyframes genome-radial-breathe { 0%, 100% { transform: scale(.93); opacity: .45; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes genome-ambient-breathe { 0%, 100% { transform: scale(.88); opacity: .52; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes genome-pulse { 0%, 72%, 100% { transform: scale(.72); opacity: 0; } 82% { opacity: .62; } 96% { transform: scale(3.5); opacity: 0; } }
+@keyframes genome-body-breathe { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-5px) scale(1.012); } }
+@keyframes genome-dna-rotate { to { transform: rotate(360deg); } }
+@keyframes genome-line-shimmer { 0%, 100% { opacity: .22; } 50% { opacity: .72; } }
+@keyframes genome-body-particle { 0%, 100% { opacity: .18; transform: translateY(0); } 50% { opacity: .95; transform: translateY(-8px); } }
+@keyframes genome-neural-flash { 0%, 82%, 100% { stroke-dashoffset: 52; opacity: .08; } 90% { opacity: .9; } 96% { stroke-dashoffset: 0; opacity: .12; } }
+@keyframes genome-scan { from { transform: translateY(0); } to { transform: translateY(545px); } }
+@keyframes genome-link-flow { to { stroke-dashoffset: -7; } }
+@keyframes genome-live-pulse { 0%, 100% { opacity: .45; filter: drop-shadow(0 0 0 currentColor); } 50% { opacity: 1; filter: drop-shadow(0 0 6px currentColor); } }
+
 @media (prefers-reduced-motion: reduce) {
-  .hologram-float,
-  .hologram-ring,
-  .hologram-ring-reverse,
-  .hologram-scan,
-  .hologram-particle,
-  .hologram-eye-pulse,
-  .hologram-orbit,
-  .hologram-evidence,
-  .hologram-glitch,
-  .hologram-neural-grid,
-  .hologram-genome-pulse,
+  .genome-depth-layer-two,
+  .genome-neural-grid,
+  .genome-ambient-particles,
+  .genome-radial-motion,
+  .genome-core-ambient,
+  .genome-core-pulse,
+  .genome-body-breathe,
+  .genome-dna-field,
+  .genome-scan-line,
+  .genome-body-particle,
+  .genome-neural-flash,
+  .genome-scan-beam,
+  .genome-neural-link-active,
+  .genome-live-dot,
   .digital-brain-search { animation: none !important; }
 }
