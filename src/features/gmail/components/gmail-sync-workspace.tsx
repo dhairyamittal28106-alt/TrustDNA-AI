@@ -11,6 +11,8 @@ import { addSessionSource, browserGenomeStore } from "@/features/identity-intell
 import type { SourceRecord } from "@/features/identity-intelligence/types";
 import { GenomeEvolutionService } from "@/features/identity-evolution/genome-evolution-service";
 import { knowledgeRepository } from "@/features/identity-knowledge/knowledge-repository";
+import { IdentityKnowledgeExtractor } from "@/features/identity-knowledge/identity-knowledge-extractor";
+import { KnowledgeMerger } from "@/features/identity-knowledge/knowledge-merger";
 import { GuardianEventBus } from "@/features/guardian/guardian-event-bus";
 import { syncGmail, GmailSyncApiError } from "@/features/gmail/api";
 import { GmailConnector, GmailConnectorError } from "@/features/gmail/gmail-connector";
@@ -21,6 +23,8 @@ import { useGmailConnection } from "@/features/gmail/use-gmail-connection";
 const gmailConnector = new GmailConnector();
 const evolutionService = new GenomeEvolutionService();
 const guardianEvents = new GuardianEventBus();
+const knowledgeExtractor = new IdentityKnowledgeExtractor();
+const knowledgeMerger = new KnowledgeMerger();
 const subscribeToAvailability = () => () => undefined;
 
 export function GmailSyncWorkspace() {
@@ -44,7 +48,8 @@ export function GmailSyncWorkspace() {
         genomeId: browserGenomeStore.load(userId)?.genomeId,
         displayName: user.displayName ?? user.email ?? "TrustDNA member",
       });
-      await persistSync(result, authorization.email);
+      const consentedText = await gmailConnector.readSentMessageText(authorization.accessToken, result.summary.messagesAnalyzed);
+      await persistSync(result, authorization.email, consentedText);
       setNotice({ tone: "success", message: `Gmail sync complete. ${result.summary.messagesAnalyzed} sent messages created Genome ${result.profile?.version ?? result.versions.at(-1)?.version ?? "update"}.` });
     } catch (error) {
       if (userId && connection && requiresReauthorization(error)) {
@@ -61,7 +66,7 @@ export function GmailSyncWorkspace() {
     }
   }
 
-  async function persistSync(result: GmailSyncResult, email: string) {
+  async function persistSync(result: GmailSyncResult, email: string, consentedText: string) {
     if (!userId) return;
     const previous = browserGenomeStore.load(userId);
     const source: SourceRecord = {
@@ -77,6 +82,16 @@ export function GmailSyncWorkspace() {
       ? addSessionSource(previous, source)
       : { genomeId: result.genome.id, ownerId: result.genome.owner_id, sources: [source] };
     browserGenomeStore.save(userId, session);
+    const version = result.profile?.version ?? result.versions.at(-1)?.version ?? "unversioned";
+    const timestamp = result.summary.syncedAt;
+    const extractedFacts = knowledgeExtractor.extract({
+      content: consentedText,
+      sourceLabel: source.label,
+      genomeVersion: version,
+      timestamp,
+    });
+    const mergedFacts = knowledgeMerger.merge(knowledgeRepository.load(userId), extractedFacts);
+    knowledgeRepository.save(userId, mergedFacts.objects);
     const snapshot = await buildGenomeSnapshot(result, session.sources, knowledgeRepository.load(userId));
     evolutionService.synchronize(userId, snapshot);
     guardianEvents.publish("gmail_sync", `Analyzed ${result.summary.messagesAnalyzed} consented sent Gmail message${result.summary.messagesAnalyzed === 1 ? "" : "s"}.`);

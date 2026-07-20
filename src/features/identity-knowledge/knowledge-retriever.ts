@@ -6,6 +6,7 @@ export type KnowledgeRetrievalIntent =
   | "date_of_birth"
   | "university"
   | "degree"
+  | "branch"
   | "education"
   | "motivation"
   | "values"
@@ -34,9 +35,10 @@ type RetrievalDefinition = {
 const retrievalPriority: RetrievalDefinition[] = [
   { intent: "identity", pattern: /\b(?:who\s+(?:am|are)\s+i|what(?:'s| is)\s+my\s+name|my\s+name)\b/i, factKeys: ["name"] },
   { intent: "date_of_birth", pattern: /\b(?:date\s+of\s+birth|birthday|when\s+was\s+i\s+born)\b/i, factKeys: ["date_of_birth"] },
-  { intent: "university", pattern: /\b(?:where\s+(?:do|did)\s+i\s+(?:study|attend)|university|college)\b/i, factKeys: ["university"] },
-  { intent: "degree", pattern: /\b(?:what(?:'s| is)\s+my\s+degree|degree|department|major)\b/i, factKeys: ["degree", "department"] },
-  { intent: "education", pattern: /\b(?:education|school)\b/i, factKeys: ["university", "degree", "department", "school"] },
+  { intent: "university", pattern: /\b(?:where\s+(?:do|did)\s+i\s+(?:study|attend)|which\s+(?:university|college)|university|college)\b/i, factKeys: ["university"] },
+  { intent: "branch", pattern: /\b(?:what(?:'s| is)\s+my\s+(?:branch|department|major)|branch|department|major|speciali[sz]ation)\b/i, factKeys: ["branch", "department"] },
+  { intent: "degree", pattern: /\b(?:what(?:'s| is)\s+my\s+degree|what\s+degree\s+am\s+i\s+(?:pursuing|studying)|degree)\b/i, factKeys: ["degree", "branch", "department"] },
+  { intent: "education", pattern: /\b(?:education|academic(?:s| history)?|school)\b/i, factKeys: ["university", "degree", "branch", "department", "education_start_year", "education_end_year", "education_status", "school"] },
   { intent: "motivation", pattern: /\b(?:what\s+motivates?\s+me|motivation|motivates?|drives?\s+me)\b/i, factKeys: ["motivation"] },
   { intent: "values", pattern: /\b(?:what\s+are\s+my\s+values|my\s+values|values?|priorities)\b/i, factKeys: ["value"] },
   { intent: "dreams", pattern: /\b(?:dream|ambition|aspiration)\b/i, factKeys: ["dream"] },

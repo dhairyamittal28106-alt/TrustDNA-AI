@@ -107,7 +107,10 @@ export class IdentityKnowledgeExtractor {
     const academic = extractAcademicFacts(sentence);
     if (academic.university) add({ factKey: "university", title: "University", category: "education" }, academic.university);
     if (academic.degree) add({ factKey: "degree", title: "Degree", category: "education" }, academic.degree);
-    if (academic.department) add({ factKey: "department", title: "Department", category: "education" }, academic.department);
+    if (academic.branch) add({ factKey: "branch", title: "Branch", category: "education" }, academic.branch);
+    if (academic.startYear) add({ factKey: "education_start_year", title: "Start year", category: "education" }, academic.startYear);
+    if (academic.endYear) add({ factKey: "education_end_year", title: "End year", category: "education" }, academic.endYear);
+    if (academic.status) add({ factKey: "education_status", title: "Education status", category: "education" }, academic.status);
 
     const school = firstMatch(sentence, [/^(?:i studied at|my school is|school\s*[:\-])\s+(.+)$/i]);
     if (school) add({ factKey: "school", title: "School", category: "education" }, school);
@@ -249,17 +252,41 @@ function firstMatch(sentence: string, patterns: RegExp[]): string | undefined {
   return undefined;
 }
 
-function extractAcademicFacts(sentence: string): { university?: string; degree?: string; department?: string } {
-  const directUniversity = firstMatch(sentence, [/^(?:i study at|i am studying at|currently studying at|current university is|my university is|i attend|university\s*[:\-])\s+(.+)$/i]);
-  const academicAt = sentence.match(/^(?:i\s+(?:am\s+)?(?:studying|pursuing)|i\s+(?:completed|graduated(?:\s+with)?|earned|received))\s+(.+?)\s+(?:at|from)\s+(.+)$/i);
+type AcademicFacts = {
+  university?: string;
+  degree?: string;
+  branch?: string;
+  startYear?: string;
+  endYear?: string;
+  status?: string;
+};
+
+/**
+ * Supports explicit first-person statements and the compact, label-free rows
+ * commonly found in resumes and consented email signatures. Every returned
+ * field is present in the source sentence; no academic field is inferred.
+ */
+function extractAcademicFacts(sentence: string): AcademicFacts {
+  const directUniversity = firstMatch(sentence, [
+    /^(?:i study at|i am studying at|currently studying at|current university is|my university is|i attend|i am enrolled at|university\s*[:\-]|college\s*[:\-]|institution\s*[:\-])\s+(.+)$/i,
+  ]);
+  const academicAt = sentence.match(/^(?:(?:i\s+)?(?:am\s+)?(?:currently\s+)?(?:studying|pursuing|enrolled\s+in)|(?:i\s+)?(?:completed|graduated(?:\s+with)?|earned|received))\s+(.+?)\s+(?:at|from)\s+(.+)$/i);
   const directDegree = firstMatch(sentence, [/^(?:my\s+)?degree\s*(?:is|:)?\s*(.+)$/i]);
-  const directDepartment = firstMatch(sentence, [/^(?:my\s+)?department\s*(?:is|:)?\s*(.+)$/i, /^i study in the department of\s+(.+)$/i]);
-  const program = directDegree ?? academicAt?.[1];
-  const parsed = program ? parseAcademicProgram(program) : {};
+  const directBranch = firstMatch(sentence, [
+    /^(?:my\s+)?(?:branch|department|major|speciali[sz]ation)\s*(?:is|:)?\s*(.+)$/i,
+    /^i study in the (?:branch|department) of\s+(.+)$/i,
+  ]);
+  const program = directDegree ?? academicAt?.[1] ?? sentence;
+  const parsed = parseAcademicProgram(program);
+  const years = extractAcademicYears(sentence);
+
   return {
-    university: cleanInstitution(directUniversity ?? academicAt?.[2]),
+    university: cleanInstitution(directUniversity ?? academicAt?.[2] ?? findInstitution(sentence)),
     degree: parsed.degree,
-    department: directDepartment ?? parsed.department,
+    branch: directBranch ?? parsed.branch,
+    startYear: years.startYear,
+    endYear: years.endYear,
+    status: extractAcademicStatus(sentence, years),
   };
 }
 
@@ -276,16 +303,76 @@ function extractTechnicalFacts(value: string, evidence: string): { matches: Fact
   return { matches, discarded };
 }
 
-function parseAcademicProgram(value: string): { degree?: string; department?: string } {
+function parseAcademicProgram(value: string): { degree?: string; branch?: string } {
   const normalized = normalizeValue(value).replace(/^(?:my|a|an|the)\s+/i, "");
-  const [degree, ...departmentParts] = normalized.split(/\s+in\s+/i);
-  const department = departmentParts.join(" in ").trim();
-  return { degree: degree.trim() || undefined, department: department || undefined };
+  const degree = findDegree(normalized);
+  if (!degree) return {};
+
+  const degreeIndex = normalized.toLocaleLowerCase().indexOf(degree.toLocaleLowerCase());
+  const afterDegree = degreeIndex === -1 ? "" : normalized.slice(degreeIndex + degree.length);
+  const branchMatch = afterDegree.match(/^\s*(?:\([^)]*\)\s*)?(?:in|[-â€“â€”|,:])\s+(.+)$/i);
+  return {
+    degree,
+    branch: branchMatch ? cleanAcademicValue(branchMatch[1]) : undefined,
+  };
+}
+
+function findDegree(value: string): string | undefined {
+  const match = value.match(/\b((?:b\.?\s*tech(?:nology)?|m\.?\s*tech(?:nology)?|b\.?\s*e\.?|m\.?\s*e\.?|b\.?\s*sc(?:ience)?|m\.?\s*sc(?:ience)?|bca|mca|bba|mba|ph\.?\s*d\.?|diploma)|(?:bachelor(?:'s)?|master(?:'s)?)(?:\s+of\s+(?:technology|science|arts|engineering|business(?:\s+administration)?|computer\s+applications?|commerce|design))?)\b/i);
+  return match?.[1] ? normalizeValue(match[1]) : undefined;
+}
+
+function findInstitution(sentence: string): string | undefined {
+  const anchored = sentence.match(/\b(?:at|from)\s+([A-Z][\p{L}\d&.'()\-]*(?:\s+(?:[A-Z][\p{L}\d&.'()\-]*|of|and|for|the)){0,8}\s+(?:University|College|Institute|Polytechnic|Academy)(?:\s+(?:[A-Z][\p{L}\d&.'()\-]*|of|and|for|the)){0,5})/iu);
+  if (anchored?.[1]) return cleanInstitution(anchored[1]);
+
+  const abbreviated = sentence.match(/\b(?:at|from)\s+((?:IIIT|IIT|NIT|IIM|BITS|AIIMS)(?:\s+[A-Z][\p{L}\d&.'()\-]*){0,5})/iu);
+  if (abbreviated?.[1]) return cleanInstitution(abbreviated[1]);
+
+  const standalone = [...sentence.matchAll(/\b([A-Z][\p{L}\d&.'()\-]*(?:\s+(?:[A-Z][\p{L}\d&.'()\-]*|of|and|for|the)){0,8}\s+(?:University|College|Institute|Polytechnic|Academy)(?:\s+(?:[A-Z][\p{L}\d&.'()\-]*|of|and|for|the)){0,5})/giu)];
+  if (standalone.at(-1)?.[1]) return cleanInstitution(standalone.at(-1)?.[1]);
+
+  const abbreviatedStandalone = [...sentence.matchAll(/\b((?:IIIT|IIT|NIT|IIM|BITS|AIIMS)(?:\s+[A-Z][\p{L}\d&.'()\-]*){0,5})/giu)];
+  return cleanInstitution(abbreviatedStandalone.at(-1)?.[1]);
+}
+
+function extractAcademicYears(sentence: string): { startYear?: string; endYear?: string } {
+  const range = sentence.match(/\b((?:19|20)\d{2})\s*(?:[-â€“â€”]|to)\s*((?:19|20)\d{2}|present|current|ongoing)\b/i);
+  if (range) {
+    return {
+      startYear: range[1],
+      endYear: /^(?:19|20)\d{2}$/i.test(range[2]) ? range[2] : undefined,
+    };
+  }
+
+  const startYear = sentence.match(/\b(?:from|started|start(?:\s+year)?|joined|enrolled(?:\s+in)?)\s*(?:in\s*)?((?:19|20)\d{2})\b/i)?.[1];
+  const endYear = sentence.match(/\b(?:expected(?:\s+graduation)?|graduating|graduated|completed|ended|end(?:\s+year)?|until|to)\s*(?:in\s*)?((?:19|20)\d{2})\b/i)?.[1];
+  return { startYear, endYear };
+}
+
+function extractAcademicStatus(sentence: string, years: { startYear?: string; endYear?: string }): string | undefined {
+  if (/\b(?:graduated|completed|earned|received|alumn(?:us|a|i)|former)\b/i.test(sentence)) return "Completed";
+  if (/\b(?:pursuing|studying|enrolled|attending|currently|current|ongoing|in\s+progress|present|expected)\b/i.test(sentence)) return "In progress";
+  return years.endYear && /\b(?:graduated|completed)\b/i.test(sentence) ? "Completed" : undefined;
+}
+
+function cleanAcademicValue(value: string): string | undefined {
+  const normalized = normalizeValue(value)
+    .replace(/\s+(?:at|from)\s+.+$/i, "")
+    .replace(/\s*(?:,|\|)\s*.+?\b(?:University|College|Institute|Polytechnic|Academy)\b.*$/i, "")
+    .replace(/\s*(?:\||,)?\s*(?:\(?\s*(?:19|20)\d{2}\s*(?:[-â€“â€”]|to)\s*(?:(?:19|20)\d{2}|present|current|ongoing)?\s*\)?)\s*$/i, "")
+    .trim();
+  return normalized || undefined;
 }
 
 function cleanInstitution(value: string | undefined): string | undefined {
   if (!value) return undefined;
-  return normalizeValue(value).replace(/\s+(?:in|during)\s+\d{4}\b.*$/i, "").trim() || undefined;
+  return normalizeValue(value)
+    .replace(/\s+(?:from|in|during)\s+(?:19|20)\d{2}(?:\s*(?:to|[-\u2013\u2014])\s*(?:(?:19|20)\d{2}|present|current|ongoing))?\b.*$/i, "")
+    // The label-free institution matcher stops before a following year, so it
+    // can leave the connecting word behind (for example, "University in").
+    .replace(/\s+(?:from|in|during)$/i, "")
+    .trim() || undefined;
 }
 
 function temporalStatus(sentence: string): KnowledgeFactStatus {

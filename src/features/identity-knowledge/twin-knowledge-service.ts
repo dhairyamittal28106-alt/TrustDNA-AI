@@ -65,15 +65,30 @@ function renderAnswer(question: string, facts: IdentityKnowledgeObject[]): strin
   const dream = facts.filter((fact) => fact.factKey === "dream");
   const university = facts.find((fact) => fact.factKey === "university");
   const degree = facts.find((fact) => fact.factKey === "degree");
-  const department = facts.find((fact) => fact.factKey === "department");
+  const branch = facts.find((fact) => fact.factKey === "branch" || fact.factKey === "department");
+  const startYear = facts.find((fact) => fact.factKey === "education_start_year");
+  const endYear = facts.find((fact) => fact.factKey === "education_end_year");
+  const educationStatus = facts.find((fact) => fact.factKey === "education_status");
   const favoritePlayer = facts.find((fact) => fact.factKey === "favorite_player");
   const favoritePlayerHistory = facts.filter((fact) => fact.factKey === "favorite_player" && fact.status === "superseded");
   const summary = facts.map((fact) => `${fact.title}: ${fact.value}.`).join("\n");
   if (/\bwho am i\b/i.test(question) && name) return `You are ${name.value}.`;
   if (intent === "date_of_birth" && dateOfBirth) return `Your date of birth is ${dateOfBirth.value}.`;
   if (intent === "dreams" && dream.length) return `Your recorded dream${dream.length === 1 ? " is" : "s are"}: ${dream.map((fact) => fact.value).join("; ")}.`;
-  if (/\b(where do i (?:study|attend)|university|college)\b/i.test(question) && university) return university.value.endsWith(".") ? university.value : `${university.value}.`;
-  if (intent === "degree" && degree) return `${degree.value}${department ? ` in ${department.value}` : ""}.`;
+  if (intent === "university" && university) return university.value.endsWith(".") ? university.value : `${university.value}.`;
+  if (intent === "branch" && branch) return `Your recorded branch is ${branch.value}.`;
+  if (intent === "degree" && degree) return `${degree.value}${branch ? ` in ${branch.value}` : ""}.`;
+  if (intent === "education") {
+    const details = [
+      university ? `University: ${university.value}` : "",
+      degree ? `Degree: ${degree.value}` : "",
+      branch ? `Branch: ${branch.value}` : "",
+      startYear ? `Start year: ${startYear.value}` : "",
+      endYear ? `End year: ${endYear.value}` : "",
+      educationStatus ? `Status: ${educationStatus.value}` : "",
+    ].filter(Boolean);
+    if (details.length) return `Your recorded education: ${details.join("; ")}.`;
+  }
   if (intent === "motivation") return `Your recorded motivation${facts.length === 1 ? " is" : "s are"}: ${facts.map((fact) => fact.value).join("; ")}.`;
   if (intent === "values") return `Your recorded value${facts.length === 1 ? " is" : "s are"}: ${facts.map((fact) => fact.value).join("; ")}.`;
   if (intent === "projects") return `Your recorded project${facts.length === 1 ? " is" : "s are"}: ${facts.map((fact) => fact.value).join("; ")}.`;

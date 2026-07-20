@@ -16,7 +16,7 @@ type FactDimensionDefinition = {
 
 const factDimensions: FactDimensionDefinition[] = [
   { id: "identity", label: "Identity", factKeys: ["name", "date_of_birth", "gender", "nationality"] },
-  { id: "education", label: "Education", factKeys: ["university", "degree", "department", "school"] },
+  { id: "education", label: "Education", factKeys: ["university", "degree", "branch", "department", "education_start_year", "education_end_year", "education_status", "school"] },
   { id: "projects", label: "Projects", factKeys: ["project"] },
   { id: "skills", label: "Technical Skills", factKeys: ["programming_language", "skill", "technology"] },
   { id: "frameworks", label: "Frameworks", factKeys: ["framework"] },

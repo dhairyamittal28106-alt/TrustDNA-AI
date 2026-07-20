@@ -19,7 +19,7 @@ type SignalDefinition = {
 
 const definitions: SignalDefinition[] = [
   { id: "identity", label: "Identity", categories: ["identity"], factKeys: ["name", "date_of_birth", "gender", "nationality"] },
-  { id: "education", label: "Education", categories: ["education"], factKeys: ["university", "degree", "department", "school"] },
+  { id: "education", label: "Education", categories: ["education"], factKeys: ["university", "degree", "branch", "department", "education_start_year", "education_end_year", "education_status", "school"] },
   { id: "skills", label: "Skills", categories: ["skills", "technologies"], factKeys: ["programming_language", "skill", "technology", "framework"] },
   { id: "projects", label: "Projects", categories: ["projects"], factKeys: ["project"] },
   { id: "dreams", label: "Dreams", categories: ["goals"], factKeys: ["dream"] },

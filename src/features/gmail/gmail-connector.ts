@@ -52,6 +52,61 @@ export class GmailConnector {
       throw new GmailConnectorError(friendlyGmailAuthError(error), error instanceof FirebaseError ? error.code : undefined);
     }
   }
+
+  /**
+   * Returns only a transient, consented sent-message text batch so the existing
+   * structured-knowledge pipeline can process direct statements. Callers must
+   * never persist the returned text or the OAuth token.
+   */
+  async readSentMessageText(accessToken: string, maxMessages: number): Promise<string> {
+    const limit = Math.min(Math.max(maxMessages, 1), 100);
+    const query = new URLSearchParams({ maxResults: `${limit}`, q: "in:sent" });
+    const listed = await gmailRequest<GmailListResponse>(`/users/me/messages?${query.toString()}`, accessToken);
+    const messages = await Promise.all((listed.messages ?? []).map(async ({ id }) => {
+      const message = await gmailRequest<GmailMessageResponse>(`/users/me/messages/${encodeURIComponent(id)}?format=full`, accessToken);
+      return extractPlainText(message.payload);
+    }));
+    return messages.map(normalizeMessage).filter(Boolean).join("\n\n");
+  }
+}
+
+type GmailListResponse = { messages?: Array<{ id: string }> };
+type GmailPayload = { mimeType?: string; body?: { data?: string }; parts?: GmailPayload[] };
+type GmailMessageResponse = { payload?: GmailPayload };
+
+async function gmailRequest<T>(path: string, accessToken: string): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`https://gmail.googleapis.com/gmail/v1${path}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+  } catch {
+    throw new GmailConnectorError("Gmail message content could not be read for structured fact extraction.", "GMAIL_CONTENT_UNAVAILABLE");
+  }
+  if (!response.ok) throw new GmailConnectorError("Gmail message content could not be read for structured fact extraction.", "GMAIL_CONTENT_UNAVAILABLE");
+  return response.json() as Promise<T>;
+}
+
+function extractPlainText(payload: GmailPayload | undefined): string {
+  if (!payload) return "";
+  if (payload.mimeType === "text/plain" && payload.body?.data) return decodeBase64Url(payload.body.data);
+  return (payload.parts ?? []).map(extractPlainText).filter(Boolean).join("\n");
+}
+
+function decodeBase64Url(value: string): string {
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
+  const bytes = Uint8Array.from(window.atob(padded), (character) => character.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function normalizeMessage(value: string): string {
+  return value
+    .split(/\r?\n/)
+    .filter((line) => !line.trimStart().startsWith(">"))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 async function assertGmailReadOnlyScope(accessToken: string): Promise<string[]> {
