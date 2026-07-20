@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { InvestigationResult, Scenario } from "@/features/judge/types";
+import { formatIndiaTime, formatIndiaTimestamp } from "@/lib/india-time";
 
 type CaseFileProps = {
   result: InvestigationResult;
@@ -39,28 +40,6 @@ const timelineLabels: Record<string, string> = {
 
 function titleCase(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function timeOnly(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    timeZone: "UTC",
-  }).format(new Date(value));
-}
-
-function timestamp(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    timeZone: "UTC",
-    timeZoneName: "short",
-  }).format(new Date(value));
 }
 
 function duration(start?: string, end?: string) {
@@ -123,7 +102,7 @@ export function CaseFile({ result, scenario, onBackToJudgeMode, onRunNewInvestig
       <div className="mb-5 grid gap-px overflow-hidden rounded-2xl border border-white/[.08] bg-white/[.08] sm:grid-cols-2 xl:grid-cols-5">
         <HeaderMetric label="STATUS" value={`${result.investigation.risk_level.toUpperCase()} · ${titleCase(result.investigation.status)}`} />
         <HeaderMetric label="SUBJECT" value={scenario.subject} />
-        <HeaderMetric label="CREATED" value={openedAt ? timestamp(openedAt) : "Not available"} />
+        <HeaderMetric label="CREATED" value={openedAt ? formatIndiaTimestamp(openedAt, true) : "Not available"} />
         <HeaderMetric label="DURATION" value={duration(openedAt, closedAt)} />
         <HeaderMetric label="INVESTIGATION ID" value={result.investigation.id} mono />
       </div>
@@ -202,11 +181,11 @@ export function CaseFile({ result, scenario, onBackToJudgeMode, onRunNewInvestig
                 return <motion.li initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.08, duration: 0.32 }} className="relative flex gap-4 pb-6 last:pb-0" key={`${event.state}-${event.occurred_at}`}>
                   {!isLast && <span aria-hidden="true" className="absolute left-[11px] top-6 h-[calc(100%-1px)] w-px bg-white/[.08]" />}
                   <span className="relative z-10 grid size-6 shrink-0 place-items-center rounded-full border border-emerald-300/15 bg-emerald-400/10"><Check aria-hidden="true" className="size-3 text-emerald-200" /></span>
-                  <div className="min-w-0 pt-0.5"><p className="text-sm leading-5 text-slate-200">{timelineLabels[event.state] ?? titleCase(event.state)}</p><p className="mt-1 font-mono text-[10px] tracking-[.1em] text-slate-600">{timeOnly(event.occurred_at)}</p></div>
+                  <div className="min-w-0 pt-0.5"><p className="text-sm leading-5 text-slate-200">{timelineLabels[event.state] ?? titleCase(event.state)}</p><p className="mt-1 font-mono text-[10px] tracking-[.1em] text-slate-600">{formatIndiaTime(event.occurred_at)}</p></div>
                 </motion.li>;
               })}
             </ol>
-            {openedAt && <p className="mt-6 border-t border-white/[.08] pt-4 font-mono text-[10px] tracking-[.1em] text-slate-600">OPENED {timestamp(openedAt)}</p>}
+            {openedAt && <p className="mt-6 border-t border-white/[.08] pt-4 font-mono text-[10px] tracking-[.1em] text-slate-600">OPENED {formatIndiaTimestamp(openedAt, true)}</p>}
           </CardContent>
         </Card>
 

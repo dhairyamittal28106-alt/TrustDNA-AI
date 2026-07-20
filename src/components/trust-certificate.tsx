@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { InvestigationResult } from "@/features/judge/types";
+import { formatIndiaTimestamp } from "@/lib/india-time";
 
 type TrustCertificateProps = {
   result: InvestigationResult;
@@ -19,18 +20,6 @@ type TrustCertificateProps = {
   onViewCaseFile: () => void;
   onViewEvidenceReport: () => void;
 };
-
-function timestamp(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "UTC",
-    timeZoneName: "short",
-  }).format(new Date(value));
-}
 
 function investigationDuration(result: InvestigationResult) {
   const timeline = result.investigation.timeline;
@@ -53,7 +42,7 @@ function downloadCertificate(result: InvestigationResult) {
     `Genome version: ${investigation.genome_version}`,
     `Trust rating: ${certificate.trust_rating}`,
     `Identity confidence: ${Math.round(certificate.identity_confidence * 100)}%`,
-    `Issued: ${certificate.issued_at}`,
+    `Issued: ${formatIndiaTimestamp(certificate.issued_at)}`,
   ].join("\n");
   const url = URL.createObjectURL(new Blob([content], { type: "text/plain" }));
   const anchor = document.createElement("a");
@@ -84,7 +73,7 @@ export function TrustCertificate({ result, onStartNewInvestigation, onViewCaseFi
               <p className="mt-8 text-xs font-medium tracking-[.15em] text-slate-500">CERTIFICATE NUMBER</p>
               <p className="mt-2 break-all font-mono text-2xl font-semibold tracking-tight text-white md:text-3xl">{certificate.certificate_number}</p>
               <div className="mt-8 grid gap-3 sm:grid-cols-3"><HeroMetric label="TRUST RATING" value={certificate.trust_rating} /><HeroMetric label="IDENTITY CONFIDENCE" value={`${Math.round(certificate.identity_confidence * 100)}%`} /><HeroMetric label="GENOME VERSION" value={investigation.genome_version.toUpperCase()} /></div>
-              <div className="mt-8 grid gap-3 border-t border-white/[.1] pt-5 text-sm sm:grid-cols-2"><Metadata label="INVESTIGATION REFERENCE" value={investigation.case_number} mono /><Metadata label="ISSUED" value={timestamp(certificate.issued_at)} /><Metadata label="CERTIFICATE ID" value={certificate.id} mono /><Metadata label="INVESTIGATION ID" value={certificate.investigation_id} mono /></div>
+              <div className="mt-8 grid gap-3 border-t border-white/[.1] pt-5 text-sm sm:grid-cols-2"><Metadata label="INVESTIGATION REFERENCE" value={investigation.case_number} mono /><Metadata label="ISSUED" value={formatIndiaTimestamp(certificate.issued_at)} /><Metadata label="CERTIFICATE ID" value={certificate.id} mono /><Metadata label="INVESTIGATION ID" value={certificate.investigation_id} mono /></div>
             </div>
             <div className="rounded-2xl border border-white/[.1] bg-[#080b22]/65 p-5 md:p-6"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-medium tracking-[.14em] text-[#b4a8ff]">VERIFICATION STATUS</p><p className="mt-2 text-lg font-medium text-white">{isVerified ? "Certificate issued" : "Awaiting case closure"}</p></div><ShieldCheck aria-hidden="true" className="size-7 text-[#c0b5ff]" /></div><div className="mt-7 grid place-items-center rounded-xl border border-[#a791ff]/20 bg-[#765ee7]/[.07] p-5"><QrCode aria-hidden="true" className="size-24 text-[#c1b6ff]" /><p className="mt-4 text-center font-mono text-[10px] tracking-[.14em] text-slate-500">QR VERIFICATION PLACEHOLDER</p></div><p className="mt-5 text-xs leading-5 text-slate-500">A scannable public-verification URL is not present in the current certificate contract.</p></div>
           </div>
