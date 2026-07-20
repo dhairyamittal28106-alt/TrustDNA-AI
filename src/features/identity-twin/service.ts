@@ -76,6 +76,7 @@ export class IdentityTwinService {
 
   private finalize(question: string, route: TwinQuestionRoute, snapshot: GenomeSnapshot, bundle: TwinEvidenceBundle, profile: IdentityProfile, reasoning: TwinReasoning, identityReasoning?: IdentityReasoningResult, hybridAdvice?: HybridAdvice) {
     const fourLayerResponse = this.composer.compose({
+      question,
       questionType: route.questionType,
       pipeline: route.pipeline,
       evidence: bundle.evidence,
