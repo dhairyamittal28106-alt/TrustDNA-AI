@@ -30,10 +30,10 @@ function streamEvent(controller: ReadableStreamDefaultController<Uint8Array>, ty
   controller.enqueue(new TextEncoder().encode(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`));
 }
 
-/**
- * Streams only milestones that have actually completed at the FastAPI layer.
- * The uploaded text is forwarded for analysis but is never persisted by this BFF.
- */
+
+
+
+
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as LiveInvestigationRequest | null;
   const content = body?.content?.trim();

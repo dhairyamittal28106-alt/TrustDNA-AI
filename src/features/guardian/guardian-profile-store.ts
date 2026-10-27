@@ -2,7 +2,7 @@ function storageKey(userId: string): string {
   return `trustdna:guardian-profile:${userId}`;
 }
 
-/** A local visual preference only. The uploaded image stays in this browser session and is never sent to the Guardian engine. */
+ 
 export const guardianProfileStore = {
   load(userId: string): string | null {
     if (typeof window === "undefined") return null;

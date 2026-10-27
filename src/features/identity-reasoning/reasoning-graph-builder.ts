@@ -1,7 +1,7 @@
 import type { BehaviorPattern, IdentityDecision, IdentityDimension, ReasoningEvidence, ReasoningGraph } from "@/features/identity-reasoning/types";
 import { mergeEvidence } from "@/features/identity-intelligence/evidence-merge";
 
-/** Builds a visible, serializable explanation graph rather than retaining hidden reasoning. */
+ 
 export class ReasoningGraphBuilder {
   build(question: string, dimensions: IdentityDimension[], patterns: BehaviorPattern[], evidence: ReasoningEvidence[], decision: IdentityDecision): ReasoningGraph {
     const auditTrail = mergeEvidence("auditTrail", evidence);

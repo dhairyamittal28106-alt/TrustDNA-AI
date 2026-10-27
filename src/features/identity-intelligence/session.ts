@@ -4,7 +4,7 @@ function storageKey(userId: string): string {
   return `trustdna:intelligence:${userId}`;
 }
 
-/** Stores opaque IDs and source metadata for the active browser session only. Raw source text is never stored here. */
+ 
 export const browserGenomeStore = {
   load(userId: string): GenomeSession | null {
     if (typeof window === "undefined") return null;

@@ -10,7 +10,7 @@ import { mergeEvidence } from "@/features/identity-intelligence/evidence-merge";
 import type { IdentityReasoningIntent, IdentityReasoningResult } from "@/features/identity-reasoning/types";
 import type { GenomeSnapshot } from "@/features/identity-intelligence/types";
 
-/** The deterministic, explainable Identity Twin reasoning pipeline. */
+ 
 export class IdentityReasoningEngine {
   constructor(
     private readonly profileAggregator = new IdentityProfileAggregator(),

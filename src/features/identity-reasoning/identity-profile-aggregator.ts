@@ -24,7 +24,7 @@ const factDimensions: FactDimensionDefinition[] = [
   { id: "sports", label: "Sports", factKeys: ["sport", "favorite_player"] },
 ];
 
-/** Synthesizes an explainable profile from all available direct facts and measured text features. */
+ 
 export class IdentityProfileAggregator {
   constructor(
     private readonly dimensions = new IdentityDimensionBuilder(),

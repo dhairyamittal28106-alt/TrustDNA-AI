@@ -1,6 +1,6 @@
 import type { IdentityReasoningIntent, IdentityProfile, ReasoningContext } from "@/features/identity-reasoning/types";
 
-/** Converts the complete Identity Profile into the single deterministic input to the reasoning engine. */
+ 
 export class ReasoningContextBuilder {
   build(question: string, intent: IdentityReasoningIntent, profile: IdentityProfile): ReasoningContext {
     return {

@@ -23,7 +23,7 @@ export type KnowledgeProvenance = {
   confidence: number;
 };
 
-/** A fact directly stated in consented evidence. No value in this type is inferred. */
+ 
 export type IdentityKnowledgeObject = {
   id: string;
   factKey: string;

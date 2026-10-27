@@ -24,7 +24,7 @@ const gapDefinitions = [
   ["health", "Health", "No direct health information is currently stored, and TrustDNA does not infer it."],
 ] as const;
 
-/** Deterministic, evidence-bounded analysis. It never calls an LLM or infers private traits. */
+ 
 export function analyzeIdentity(snapshot: GenomeSnapshot, investigations: InvestigationHistoryRecord[]): AnalystReport {
   const facts = snapshot.knowledgeHistory.filter((fact) => fact.status === "active");
   const byKey = (keys: string[]) => facts.filter((fact) => keys.includes(fact.factKey));

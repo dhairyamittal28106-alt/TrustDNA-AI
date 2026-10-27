@@ -16,7 +16,7 @@ const intentLabels: Record<IdentityReasoningIntent, string> = {
   general_decision: "a general decision",
 };
 
-/** Delivers an auditable summary of the structured pipeline without exposing hidden chain-of-thought. */
+ 
 export class ReasoningExplanationService {
   summarize(intent: IdentityReasoningIntent, evidence: ReasoningEvidence[], decision: IdentityDecision, profile: IdentityProfile): string[] {
     const categories = Array.from(new Set(evidence.map((item) => item.title))).join(", ");

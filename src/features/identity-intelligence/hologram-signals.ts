@@ -31,7 +31,7 @@ const definitions: SignalDefinition[] = [
   { id: "communication", label: "Communication", measured: true },
 ];
 
-/** Builds presentational signals exclusively from the already loaded Genome. */
+ 
 export function buildGenomeHologramSignals(snapshot: GenomeSnapshot): GenomeHologramSignal[] {
   const activeFacts = snapshot.knowledgeHistory.filter((fact) => fact.status === "active");
   const latestVersion = snapshot.latestVersion?.version;

@@ -4,7 +4,7 @@ function storageKey(userId: string): string {
   return `trustdna:investigation-history:${userId}`;
 }
 
-/** Persists returned case metadata for the active browser session; never raw source text or media. */
+ 
 export const investigationHistory = {
   load(userId: string): InvestigationHistoryRecord[] {
     if (typeof window === "undefined") return [];

@@ -12,7 +12,7 @@ export type ExplicitProfileSignal = {
   confidence: number;
 };
 
-/** Builds provenance-complete dimensions from direct facts or transparent deterministic signals. */
+ 
 export class IdentityDimensionBuilder {
   constructor(private readonly scoring = new IdentityScoringEngine()) {}
 

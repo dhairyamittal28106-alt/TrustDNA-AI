@@ -48,7 +48,7 @@ const repeatedSignals: SignalDefinition[] = [
   },
 ];
 
-/** Emits a behavior signal only when at least two direct statements support it. */
+ 
 export class BehaviorSignalAggregator {
   constructor(private readonly scoring = new IdentityScoringEngine()) {}
 

@@ -7,30 +7,30 @@ export type KnowledgeRepair = {
 
 const namePart = /^[A-Z][\p{L}'-]*$/u;
 
-/**
- * A first-person statement is not automatically a name. Names must be a
- * concise, title-cased sequence of human-name tokens so behavior statements
- * such as “I am comfortable speaking …” can never enter the Name field.
- */
+
+
+
+
+
 export function isHumanName(value: string): boolean {
   const parts = value.trim().split(/\s+/).filter(Boolean);
   return parts.length >= 2 && parts.length <= 4 && parts.every((part) => namePart.test(part));
 }
 
-/**
- * Generates an immutable, globally unique Knowledge Object identifier. IDs are
- * intentionally not derived from fact content: equal statements are handled by
- * the merger, while every created object receives its own stable identity.
- */
+
+
+
+
+
 export function createKnowledgeObjectId(): string {
   return `fact-${globalThis.crypto.randomUUID()}`;
 }
 
-/**
- * Removes duplicate identifiers while preserving the newest record. The
- * diagnostic payload is deliberately structured so a duplicate can be traced
- * back to its object type, source, and Genome version without changing UI keys.
- */
+
+
+
+
+
 export function deduplicateById<T extends { id: string }>(objects: T[], stage: string): T[] {
   const retained = new Map<string, T>();
 
@@ -50,7 +50,7 @@ export function deduplicateById<T extends { id: string }>(objects: T[], stage: s
   return [...retained.values()];
 }
 
-/** Repairs invalid legacy facts and duplicate IDs before repository consumers receive them. */
+ 
 export function repairStoredKnowledge(objects: IdentityKnowledgeObject[]): { objects: IdentityKnowledgeObject[]; repairs: KnowledgeRepair[] } {
   const repairs: KnowledgeRepair[] = [];
   const duplicateIds = duplicateIdCounts(objects);

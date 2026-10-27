@@ -13,11 +13,11 @@ type TraceRecord = {
   "Mutation history": string[];
 };
 
-/**
- * Session-local observability for the direct Knowledge Object lifecycle.
- * It intentionally logs only consented object data already held in memory and
- * never writes raw Personal Notes to persistent storage.
- */
+
+
+
+
+
 export class KnowledgeLifecycleTracer {
   private readonly history = new Map<string, string[]>();
   private readonly fingerprints = new Map<string, string>();

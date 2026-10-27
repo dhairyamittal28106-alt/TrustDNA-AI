@@ -17,7 +17,7 @@ const stages = [
 type Point = { x: number; y: number };
 const positions: Point[] = [{ x: 50, y: 10 }, { x: 80, y: 26 }, { x: 87, y: 60 }, { x: 62, y: 85 }, { x: 28, y: 82 }, { x: 10, y: 51 }, { x: 22, y: 21 }];
 
-/** A visible, bounded representation of the reasoning result—not chain-of-thought. */
+ 
 export function DigitalBrain({ reasoning }: { reasoning: IdentityReasoningResult }) {
   const reduceMotion = useReducedMotion();
   const nodes = reasoning.dimensions.slice(0, positions.length);

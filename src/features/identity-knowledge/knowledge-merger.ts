@@ -1,7 +1,7 @@
 import { createKnowledgeObjectId, repairStoredKnowledge } from "@/features/identity-knowledge/knowledge-integrity";
 import type { IdentityKnowledgeObject, KnowledgeMergeResult } from "@/features/identity-knowledge/types";
 
-/** Keeps conflicting statements as history while making the newest literal statement active. */
+ 
 export class KnowledgeMerger {
   merge(existing: IdentityKnowledgeObject[], incoming: IdentityKnowledgeObject[]): KnowledgeMergeResult {
     let objects = repairStoredKnowledge(existing).objects;
@@ -64,7 +64,7 @@ function ensureIncomingId(existing: IdentityKnowledgeObject[], incoming: Identit
   return { ...incoming, id };
 }
 
-/** Facts such as projects and skills are additive, not mutually exclusive profile fields. */
+ 
 function isMultiValueFact(factKey: string): boolean {
   return ["goal", "dream", "project", "programming_language", "framework", "skill", "technology", "interest", "book", "sport", "value", "motivation"].includes(factKey);
 }

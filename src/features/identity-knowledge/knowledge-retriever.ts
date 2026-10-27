@@ -27,11 +27,11 @@ type RetrievalDefinition = {
   includeHistory?: boolean;
 };
 
-/**
- * Ordered, deterministic question-to-ontology mapping. A direct fact question
- * can only retrieve its declared fact keys; it never falls back to a broad
- * Identity Genome search.
- */
+
+
+
+
+
 const retrievalPriority: RetrievalDefinition[] = [
   { intent: "identity", pattern: /\b(?:who\s+(?:am|are)\s+i|what(?:'s| is)\s+my\s+name|my\s+name)\b/i, factKeys: ["name"] },
   { intent: "date_of_birth", pattern: /\b(?:date\s+of\s+birth|birthday|when\s+was\s+i\s+born)\b/i, factKeys: ["date_of_birth"] },

@@ -21,10 +21,10 @@ const neuralPaths = [
   "M270 137C222 184 292 222 218 292C196 314 257 356 230 422",
 ] as const;
 
-/**
- * Purely presentational SVG. Its particles and neural routes are deterministic
- * so movement remains a representation of Genome state rather than decoration.
- */
+
+
+
+
 export function LivingHologramCore({ assembly, active, onInteractionChange }: LivingHologramCoreProps) {
   const instanceId = useId().replace(/:/g, "");
   const reduceMotion = useReducedMotion();

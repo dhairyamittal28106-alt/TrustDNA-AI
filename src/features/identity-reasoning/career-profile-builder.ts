@@ -2,7 +2,7 @@ import { IdentityDimensionBuilder } from "@/features/identity-reasoning/identity
 import type { IdentityKnowledgeObject } from "@/features/identity-knowledge/types";
 import type { IdentityDimension } from "@/features/identity-reasoning/types";
 
-/** Keeps career direction limited to direct career statements in the Identity Genome. */
+ 
 export class CareerProfileBuilder {
   constructor(private readonly dimensions = new IdentityDimensionBuilder()) {}
 

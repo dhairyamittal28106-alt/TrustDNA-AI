@@ -137,8 +137,8 @@ export function IdentityIntelligenceWorkspace() {
       logExtractionReport(finalizeExtractionReport(extraction, mergedFacts.objects), input.sourceLabel);
       const nextSnapshot = await buildGenomeSnapshot(payload, session.sources, persistedFacts);
       knowledgeLifecycleTracer.trace("genome_snapshot", nextSnapshot.knowledgeHistory);
-      // Question-specific selection remains in the read-only retriever; this
-      // stage records the exact immutable history it receives.
+      
+      
       knowledgeLifecycleTracer.trace("retriever_input", nextSnapshot.knowledgeHistory);
       setSnapshot(nextSnapshot);
       evolutionService.synchronize(userId, nextSnapshot);

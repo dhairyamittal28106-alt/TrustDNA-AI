@@ -9,7 +9,7 @@ function storageKey(userId: string): string {
   return `trustdna:identity-knowledge:${userId}`;
 }
 
-/** Stores structured facts and compact provenance in this browser session only; never raw source documents. */
+ 
 export const knowledgeRepository = {
   load(userId: string): IdentityKnowledgeObject[] {
     if (typeof window === "undefined") return [];
@@ -42,10 +42,10 @@ export const knowledgeRepository = {
   },
 };
 
-/**
- * Keeps historic evidence visible but prevents a pre-12.6 ambiguous phrase
- * such as "the right ps" from remaining an active technical skill.
- */
+
+
+
+
 function supersedeAmbiguousLegacyFacts(objects: IdentityKnowledgeObject[]): IdentityKnowledgeObject[] {
   return objects.map((fact) => {
     if (fact.status !== "active" || !["skill", "technology"].includes(fact.factKey)) return fact;

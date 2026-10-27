@@ -20,7 +20,7 @@ export type TwinIntent =
   | "prediction_boundary"
   | "unknown";
 
-/** Semantic question categories used by the Unified Cognitive Orchestrator. */
+ 
 export type TwinQuestionType =
   | "identity_facts"
   | "identity_summary"
@@ -52,7 +52,7 @@ export type TwinResponseLayer = {
   evidenceIds: string[];
 };
 
-/** Visible, non-chain-of-thought trace returned with every orchestrated answer. */
+ 
 export type TwinReasoningTrace = {
   questionType: TwinQuestionType;
   pipeline: TwinPipelineName;
@@ -153,13 +153,13 @@ export type TwinResponse = TwinReasoning & {
   confidenceLabel: string;
   evidenceUsed: TwinEvidence[];
   evidenceBundle: TwinEvidenceBundle;
-  /** Structured, visible reasoning for open-ended decision-support questions. */
+   
   identityReasoning?: IdentityReasoningResult;
-  /** Deterministic advice with explicit evidence and general-knowledge boundaries. */
+   
   hybridAdvice?: HybridAdvice;
-  /** The four evidence-precedence layers, safe to render without hidden reasoning. */
+   
   responseLayers?: TwinResponseLayer[];
-  /** Explainable orchestration metadata for audit and trace views. */
+   
   reasoningTrace?: TwinReasoningTrace;
   pipeline: TwinPipelineStage[];
   generatedAt: string;

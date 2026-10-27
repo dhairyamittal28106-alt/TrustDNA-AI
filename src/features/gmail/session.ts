@@ -7,7 +7,7 @@ function storageKey(userId: string): string {
   return `trustdna:gmail:${userId}`;
 }
 
-/** Stores connection metadata only. OAuth access tokens and Gmail message content are never persisted here. */
+ 
 export const gmailConnectionStore = {
   load(userId: string): GmailConnectionRecord | null {
     if (typeof window === "undefined") return null;

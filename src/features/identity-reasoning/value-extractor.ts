@@ -1,7 +1,7 @@
 import type { IdentityKnowledgeObject } from "@/features/identity-knowledge/types";
 import type { ExplicitProfileSignal } from "@/features/identity-reasoning/identity-dimension-builder";
 
-/** Returns only normalized value objects directly stated by the user. */
+ 
 export class ValueExtractor {
   extract(facts: IdentityKnowledgeObject[]): ExplicitProfileSignal[] {
     return facts

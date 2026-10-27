@@ -21,11 +21,11 @@ export type FourLayerResponse = {
   trace: TwinReasoningTrace;
 };
 
-/**
- * Converts the orchestrator's deterministic result into a concise, human
- * response. Evidence and audit metadata remain structured; only their
- * presentation is synthesized here.
- */
+
+
+
+
+
 export class FourLayerResponseComposer {
   constructor(private readonly persona = new PersonaConsistencyEngine()) {}
 

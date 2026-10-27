@@ -14,11 +14,11 @@ import type { GenomeSnapshot } from "@/features/identity-intelligence/types";
 import type { IdentityProfile, IdentityReasoningResult, ReasoningEvidence } from "@/features/identity-reasoning/types";
 import type { HybridAdvice, TwinEvidence, TwinEvidenceBundle, TwinIntent, TwinReasoning, TwinResponse } from "@/features/identity-twin/types";
 
-/**
- * Phase 22â€“23 orchestrator. It composes the existing retriever, reasoning
- * engine, advisor, and direct-fact service through one explicit precedence
- * order: Evidence -> Alignment -> General Guidance -> Persona -> Unknowns.
- */
+
+
+
+
+
 export class IdentityTwinService {
   constructor(
     private readonly classifier = new QuestionClassifier(),

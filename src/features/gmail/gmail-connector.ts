@@ -53,11 +53,11 @@ export class GmailConnector {
     }
   }
 
-  /**
-   * Returns only a transient, consented sent-message text batch so the existing
-   * structured-knowledge pipeline can process direct statements. Callers must
-   * never persist the returned text or the OAuth token.
-   */
+  
+
+
+
+
   async readSentMessageText(accessToken: string, maxMessages: number): Promise<string> {
     const limit = Math.min(Math.max(maxMessages, 1), 100);
     const query = new URLSearchParams({ maxResults: `${limit}`, q: "in:sent" });

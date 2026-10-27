@@ -30,8 +30,8 @@ export class EvidenceSelector {
       evidence: mergeEvidence("selectedEvidence", evidence),
       sections,
       knowledgeObjects,
-      // Timeline entries are displayed as existing Genome references only. They are
-      // never treated as evidence for a personal claim unless an extractor marks it so.
+      
+      
       timeline: deduplicateById(retrieved.timeline, "Twin evidence timeline"),
       sources: deduplicateById(retrieved.sources.filter((source) => source.status === "ingested"), "Twin evidence sources"),
       version: retrieved.version,

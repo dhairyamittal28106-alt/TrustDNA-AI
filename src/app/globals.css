@@ -69,7 +69,7 @@
 .digital-brain-search { animation: digital-brain-search 2.7s ease-out infinite; }
 @keyframes digital-brain-search { 0%, 100% { opacity: .05; transform: translate(-50%, -50%) scale(.5); } 42% { opacity: .68; } 72% { opacity: 0; transform: translate(-50%, -50%) scale(5.8); } }
 
-/* The flagship Genome visual uses transform/opacity-only loops to stay on the compositor. */
+ 
 .genome-hologram-shell { contain: paint; }
 .genome-depth-layer { pointer-events: none; }
 .genome-depth-layer-one { background: radial-gradient(circle at 15% 18%, rgb(76 119 255 / 14%), transparent 28%), radial-gradient(circle at 82% 80%, rgb(44 213 235 / 10%), transparent 30%); }

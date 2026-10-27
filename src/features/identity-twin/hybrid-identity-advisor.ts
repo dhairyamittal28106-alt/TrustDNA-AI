@@ -27,11 +27,11 @@ type TopicGuide = {
   relevantDimensions: IdentityDimensionId[];
 };
 
-/**
- * Produces deterministic, bounded life guidance. Identity facts are selected
- * from the current Profile; the guidance checklist is static general knowledge
- * and is deliberately labelled as such in every response.
- */
+
+
+
+
+
 export class HybridIdentityAdvisor {
   constructor(private readonly profileAggregator = new IdentityProfileAggregator()) {}
 

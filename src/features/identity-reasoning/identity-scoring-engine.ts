@@ -1,4 +1,4 @@
-/** Scores only the quality and repetition of supplied evidence; it never scores a person. */
+ 
 export class IdentityScoringEngine {
   score(confidences: number[]): number {
     if (!confidences.length) return 0;

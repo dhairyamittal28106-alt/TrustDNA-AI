@@ -6,7 +6,7 @@ import type { TwinEvidence, TwinReasoning } from "@/features/identity-twin/types
 
 export type KnowledgeAnswer = { reasoning: TwinReasoning; evidence: TwinEvidence[] } | null;
 
-/** Answers fact questions before the writing-feature retrieval path. */
+ 
 export class TwinKnowledgeService {
   constructor(private readonly retriever = new KnowledgeRetriever()) {}
 

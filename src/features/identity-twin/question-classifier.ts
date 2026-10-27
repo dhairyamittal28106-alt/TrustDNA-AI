@@ -7,12 +7,12 @@ export type TwinQuestionRoute = {
   boundaryKind?: "future" | "medical" | "financial" | "legal" | "private";
 };
 
-/**
- * Routes a question before any Genome retrieval happens. Ordering is
- * deliberate: prediction boundaries and hybrid life advice must never be
- * mistaken for direct facts just because they contain words such as "career"
- * or "relationship".
- */
+
+
+
+
+
+
 export class QuestionClassifier {
   classify(question: string): TwinIntent {
     return this.route(question).intent;

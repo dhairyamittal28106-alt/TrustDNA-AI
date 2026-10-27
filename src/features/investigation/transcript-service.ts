@@ -6,10 +6,10 @@ export type TranscriptState = {
   transcript?: string;
 };
 
-/**
- * A clear capability boundary: media is captured locally, but this deployment
- * has no speech-to-text provider configured. It never manufactures a transcript.
- */
+
+
+
+
 export class TranscriptService {
   status(voice: VoiceEvidence | undefined, suppliedTranscript: string): TranscriptState {
     if (!voice) return { available: false, message: "Record or upload voice evidence to add a transcript." };

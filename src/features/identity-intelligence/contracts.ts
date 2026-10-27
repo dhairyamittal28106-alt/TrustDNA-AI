@@ -34,10 +34,10 @@ export type ExtractedFeatureInput = {
   updatedAt?: string;
 };
 
-/**
- * Converts only deterministic features returned by FastAPI into knowledge
- * objects. It intentionally does not infer values, goals, or personality.
- */
+
+
+
+
 export class DeterministicKnowledgeExtractor implements KnowledgeExtractor<ExtractedFeatureInput> {
   async extract({ features, evidenceSources, updatedAt }: ExtractedFeatureInput): Promise<KnowledgeObject[]> {
     const language = features.preferred_language === "en" ? "English" : features.preferred_language;

@@ -84,8 +84,8 @@ export function LiveInvestigationWorkspace() {
       try {
         before = await buildGenomeSnapshot(await loadGenomeIntelligence(previous.genomeId), previous.sources, knowledgeRepository.load(userId));
       } catch {
-        // A previous browser-session reference can expire when the backend restarts.
-        // The live flow still proceeds with a fresh evidence-backed version.
+        
+        
       }
     }
     setBeforeSnapshot(before);

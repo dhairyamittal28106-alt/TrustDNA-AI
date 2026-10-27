@@ -1,6 +1,6 @@
 import type { LiveInvestigationEvent, LiveInvestigationInput } from "@/features/live-investigation/types";
 
-/** Streams actual BFF completion events; it never manufactures an investigation result or timing sequence. */
+ 
 export class LiveInvestigationOrchestrator {
   async run(input: LiveInvestigationInput, onEvent: (event: LiveInvestigationEvent) => Promise<void> | void): Promise<void> {
     const response = await fetch("/api/live-investigation", {

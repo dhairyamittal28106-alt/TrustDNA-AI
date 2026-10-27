@@ -1,7 +1,7 @@
 import type { IdentityKnowledgeObject } from "@/features/identity-knowledge/types";
 import type { ExplicitProfileSignal } from "@/features/identity-reasoning/identity-dimension-builder";
 
-/** Uses only explicit motivation statements; goals, dreams, and career stay separate dimensions. */
+ 
 export class MotivationExtractor {
   extract(facts: IdentityKnowledgeObject[]): ExplicitProfileSignal[] {
     return facts

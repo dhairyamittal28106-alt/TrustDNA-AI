@@ -1,6 +1,6 @@
 import type { IdentityDecision } from "@/features/identity-reasoning/types";
 
-/** Keeps the user-facing recommendation shape uniform across every decision context. */
+ 
 export class RecommendationEngine {
   build(decision: IdentityDecision): IdentityDecision {
     return {

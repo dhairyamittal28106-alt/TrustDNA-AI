@@ -1,8 +1,8 @@
-/**
- * Preserves the first occurrence of each immutable Knowledge Object ID while
- * making evidence joins observable. Evidence can be selected by more than one
- * deterministic dimension, but it must be rendered only once.
- */
+
+
+
+
+
 export type EvidencePipelineStage =
   | "selectedEvidence"
   | "reasoningEvidence"
@@ -22,10 +22,10 @@ type EvidenceRecord = {
   provenance?: { source?: string; version?: string };
 };
 
-/**
- * Merges evidence arrays without allowing the same immutable object reference
- * to enter a later Twin pipeline stage twice.
- */
+
+
+
+
 export function mergeEvidence<T extends { id: string }>(stage: EvidencePipelineStage, ...arrays: ReadonlyArray<ReadonlyArray<T>>): T[] {
   const incoming = arrays.flatMap((array) => array);
   const before = incoming.map(describeEvidence);

@@ -45,7 +45,7 @@ function aggregate(signals: GenomeHologramSignal[], ids: string[]) {
   return { evidenceCount, confidence, lastUpdated: matched.map((signal) => signal.lastUpdated).filter(Boolean).sort().at(-1), version: matched.find((signal) => signal.version)?.version };
 }
 
-/** Maps existing explainable signals into a fixed semantic orbit. */
+ 
 export function buildGenomeOrbitNodes(signals: GenomeHologramSignal[], genomeVersion?: string): GenomeOrbitNode[] {
   const definitions: Array<{ id: string; label: string; sourceSignalIds: string[] }> = [
     { id: "identity", label: "Identity", sourceSignalIds: ["identity"] },

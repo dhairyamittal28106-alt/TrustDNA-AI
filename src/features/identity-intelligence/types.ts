@@ -20,7 +20,7 @@ export type SourceRecord = {
   status: SourceRecordStatus;
   origin: KnowledgeOrigin;
   addedAt?: string;
-  /** Version created by this browser-session source. Historical sources may not have one. */
+   
   genomeVersion?: string;
 };
 
@@ -144,9 +144,9 @@ export type GenomeSnapshot = {
   timeline: GenomeTimelineEvent[];
   knowledgeGraph: { nodes: KnowledgeGraphNode[]; edges: KnowledgeGraphEdge[] };
   knowledgeObjects: KnowledgeObject[];
-  /** Active structured facts, extracted only from direct consented statements. */
+   
   identityFacts: import("@/features/identity-knowledge/types").IdentityKnowledgeObject[];
-  /** Active and superseded fact history for conflict-aware retrieval and timelines. */
+   
   knowledgeHistory: import("@/features/identity-knowledge/types").IdentityKnowledgeObject[];
   sourceCount: number;
   genomeConfidence?: number;

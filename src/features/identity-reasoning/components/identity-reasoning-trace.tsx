@@ -10,7 +10,7 @@ type IdentityReasoningTraceProps = {
   reasoning?: IdentityReasoningResult;
 };
 
-/** Visible, structured decision trace for an Identity Twin response. */
+ 
 export function IdentityReasoningTrace({ reasoning }: IdentityReasoningTraceProps) {
   const reduceMotion = useReducedMotion();
   if (!reasoning) return null;

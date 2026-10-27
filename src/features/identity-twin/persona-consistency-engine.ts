@@ -20,10 +20,10 @@ const personaDimensionIds = new Set([
 
 const priority = ["dreams", "goals", "career", "projects", "values", "motivations", "skills", "behavior_patterns", "communication"];
 
-/**
- * Produces a deterministic, evidence-bounded stance from the active Identity
- * Profile. It never creates memories, private facts, or future certainty.
- */
+
+
+
+
 export class PersonaConsistencyEngine {
   simulate(profile: IdentityProfile, selected: IdentityDimension[], question: string): PersonaSimulation | null {
     const candidates = (selected.length ? selected : profile.dimensions)

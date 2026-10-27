@@ -44,10 +44,10 @@ const tools = new Set([
   "aws", "docker", "firebase", "git", "kubernetes", "linux", "mongodb", "postgresql",
 ]);
 
-/**
- * Extracts explicit, sentence-level facts from consented text. The audit API
- * exposes every accepted or rejected sentence without storing raw notes.
- */
+
+
+
+
 export class IdentityKnowledgeExtractor {
   extract(input: KnowledgeExtractionInput): IdentityKnowledgeObject[] {
     return this.extractWithReport(input).facts;
@@ -190,7 +190,7 @@ export class IdentityKnowledgeExtractor {
   }
 }
 
-/** Marks each extracted object as stored, already present, or rejected after merging. */
+ 
 export function finalizeExtractionReport(run: ExtractionRun, storedObjects: IdentityKnowledgeObject[]): SentenceExtractionReport[] {
   return run.report.map((entry) => ({
     ...entry,
@@ -204,7 +204,7 @@ export function finalizeExtractionReport(run: ExtractionRun, storedObjects: Iden
   }));
 }
 
-/** Emits a structured, transient browser-console report. Raw note text is never persisted. */
+ 
 export function logExtractionReport(report: SentenceExtractionReport[], sourceLabel: string): void {
   if (typeof window === "undefined") return;
   console.groupCollapsed(`[TrustDNA] Extraction report - ${sourceLabel}`);
@@ -261,11 +261,11 @@ type AcademicFacts = {
   status?: string;
 };
 
-/**
- * Supports explicit first-person statements and the compact, label-free rows
- * commonly found in resumes and consented email signatures. Every returned
- * field is present in the source sentence; no academic field is inferred.
- */
+
+
+
+
+
 function extractAcademicFacts(sentence: string): AcademicFacts {
   const directUniversity = firstMatch(sentence, [
     /^(?:i study at|i am studying at|currently studying at|current university is|my university is|i attend|i am enrolled at|university\s*[:\-]|college\s*[:\-]|institution\s*[:\-])\s+(.+)$/i,
@@ -369,8 +369,8 @@ function cleanInstitution(value: string | undefined): string | undefined {
   if (!value) return undefined;
   return normalizeValue(value)
     .replace(/\s+(?:from|in|during)\s+(?:19|20)\d{2}(?:\s*(?:to|[-\u2013\u2014])\s*(?:(?:19|20)\d{2}|present|current|ongoing))?\b.*$/i, "")
-    // The label-free institution matcher stops before a following year, so it
-    // can leave the connecting word behind (for example, "University in").
+    
+    
     .replace(/\s+(?:from|in|during)$/i, "")
     .trim() || undefined;
 }

@@ -4,7 +4,7 @@ type DecisionInput = Pick<ReasoningContext, "intent" | "dimensions" | "behaviorS
   evidence: ReasoningEvidence[];
 };
 
-/** Uses fixed decision rules and direct values. It never turns incomplete evidence into a personality prediction. */
+ 
 export class IdentityDecisionEngine {
   decide({ intent, dimensions, behaviorSignals, evidence }: DecisionInput): IdentityDecision {
     const values = new Map(dimensions.map((dimension) => [dimension.id, dimension.value]));
